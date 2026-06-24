@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+sqlalchemy
+PyJWT
+pytesseract
+Pillow
+python-multipart
