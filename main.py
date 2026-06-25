@@ -18,7 +18,7 @@ from typing import Optional
 SECRET_KEY = "merve_safa_alparslan_erp_secret"
 
 os.makedirs("uploads", exist_ok=True)
-app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="6.0.0")
+app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="6.5.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -38,17 +38,16 @@ class LoginRequest(BaseModel): username: str; password: str
 class TodoCreate(BaseModel): task: str; detay: str = ""
 class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str = ""; dosya_no: str; karsi_taraf: str; tur: str
 class CaseUpdate(BaseModel): durum: str; karsi_taraf: str
+class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float
 
 # --- GİRİŞ / ÇİFT ROL YETKİLENDİRME (AVUKAT & MÜVEKKİL) ---
 @app.post("/api/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    # Önce Avukat tablosuna bak (Kullanıcı Adı ile)
     user = db.query(models.User).filter(models.User.username == req.username).first()
     if user and user.password_hash == req.password:
         token = jwt.encode({"sub": user.username, "role": "Avukat", "ad": user.ad_soyad}, SECRET_KEY, algorithm="HS256")
         return {"token": token, "role": "Avukat", "ad_soyad": user.ad_soyad}
     
-    # Avukat değilse, Müvekkil tablosuna bak (T.C. Kimlik No ile)
     client = db.query(models.Client).filter(models.Client.tc_kimlik == req.username).first()
     if client and client.password == req.password:
         token = jwt.encode({"sub": client.tc_kimlik, "role": "Müvekkil", "ad": client.ad_soyad, "id": client.id}, SECRET_KEY, algorithm="HS256")
@@ -94,7 +93,19 @@ def update_case(case_id: int, req: CaseUpdate, db: Session = Depends(get_db)):
     db.commit()
     return {"mesaj": "Dosya güncellendi."}
 
-# --- YENİ KAYIT ---
+@app.post("/api/expenses")
+def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)):
+    db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar))
+    db.commit()
+    return {"mesaj": "Gider Eklendi"}
+
+@app.delete("/api/expenses/{expense_id}")
+def delete_expense(expense_id: int, db: Session = Depends(get_db)):
+    exp = db.query(models.OfficeExpense).filter(models.OfficeExpense.id == expense_id).first()
+    if exp: db.delete(exp); db.commit()
+    return {"mesaj": "Silindi"}
+
+# --- YENİ KAYIT (CRM) ---
 @app.post("/api/add-client-case")
 def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
@@ -103,7 +114,7 @@ def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
         db.add(client); db.commit(); db.refresh(client)
     try: case_type = models.CaseType(data.tur)
     except: case_type = models.CaseType.DAVA
-    yeni_dosya = models.CaseFile(dosya_no=data.dosya_no, karsi_taraf=data.karsi_taraf, tur=case_type, durum="Yeni Açıldı", client_id=client.id)
+    yeni_dosya = models.CaseFile(dosya_no=data.dosya_no, karsi_taraf=data.karsi_taraf, tur=case_type, durum="Sürece Başlandı", client_id=client.id)
     db.add(yeni_dosya)
     if not client.account: db.add(models.Account(client_id=client.id, toplam_borc=0.0, odenen=0.0))
     db.add(models.CaseStage(aciklama="Dosya sisteme kaydedildi.", case_id=yeni_dosya.id))
@@ -155,6 +166,12 @@ def upload_document(case_id: int, file: UploadFile = File(...), db: Session = De
     db.add(models.CaseStage(aciklama=f"Sisteme evrak yüklendi: {file.filename}", case_id=case_id))
     db.commit()
     return {"m": "ok"}
+
+@app.post("/api/uyap-sync")
+def uyap_sync():
+    import time
+    time.sleep(1)
+    return {"mesaj": "UYAP Otomasyonu başarıyla çalıştırıldı (Simüle edildi). Sistem güncel."}
 
 # --- YAPAY ZEKA VE DİLEKÇE ---
 @app.post("/api/chat")
@@ -219,3 +236,7 @@ def get_client_details(client_id: int, db: Session = Depends(get_db)):
 def search_client(query: str, db: Session = Depends(get_db)):
     cases = db.query(models.CaseFile).join(models.Client).outerjoin(models.Document).filter((models.Client.tc_kimlik.contains(query)) | (models.CaseFile.dosya_no.contains(query)) | (models.Client.ad_soyad.ilike(f"%{query}%")) | (models.Document.ocr_text.ilike(f"%{query}%"))).distinct().all()
     return [{"id": c.id, "dosya_no": c.dosya_no, "muvekkil": c.owner.ad_soyad, "tur": c.tur.value, "durum": c.durum, "is_closed": c.is_closed} for c in cases]
+
+@app.get("/api/hearings")
+def get_hearings(db: Session = Depends(get_db)):
+    return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih).all()]
