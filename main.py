@@ -14,12 +14,12 @@ from database import SessionLocal, engine
 from datetime import date, timedelta, datetime
 import models
 import mock_data
-import bcrypt # ÇÖKME YARATAN PASSLIB YERİNE SAF BCRYPT EKLENDİ
+import bcrypt 
 
 # Güvenlik Ayarları
 SECRET_KEY = "merve_safa_alparslan_erp_secret"
 
-# GÜNCELLEME: Çökmeyen, hatasız ve doğrudan çalışan şifreleme algoritması
+# Güvenli Şifreleme Algoritması (passlib tamamen kaldırıldı)
 def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
@@ -29,7 +29,7 @@ def safe_verify_password(plain_password: str, hashed_password: str) -> bool:
     if not hashed_password:
         return False
     if hashed_password == plain_password:
-        return True # Eski düz metin şifreler için kurtarıcı blok
+        return True 
     try:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
     except Exception:
