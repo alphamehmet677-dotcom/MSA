@@ -7,3 +7,4 @@ PyJWT
 pytesseract
 Pillow
 python-multipart
+passlib[bcrypt]
