@@ -53,6 +53,10 @@ class PaymentCreate(BaseModel): miktar: float; odeme_yontemi: str = "Banka"; aci
 class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str; eposta: str; dosya_no: str; karsi_taraf: str; tur: str; anlasilan_ucret: float
 class CaseClientUpdate(BaseModel): durum: str; karsi_taraf: str; anlasilan_ucret: float; telefon: str; eposta: str
 
+# Yeni Duruşma Pydantic Modelleri
+class HearingCreate(BaseModel): tarih: date; saat: str = "10:00"; mahkeme: str
+class HearingUpdate(BaseModel): sonuc: str
+
 @app.post("/api/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == req.username).first()
@@ -172,7 +176,8 @@ def get_case_details(case_id: int, db: Session = Depends(get_db)):
         "muvekkil": {"id": c.owner.id, "ad_soyad": c.owner.ad_soyad, "tc": c.owner.tc_kimlik, "telefon": c.owner.telefon, "eposta": c.owner.eposta},
         "finans": {"toplam": hesap.toplam_borc if hesap else 0, "odenen": hesap.odenen if hesap else 0, "kalan": (hesap.toplam_borc - hesap.odenen) if hesap else 0},
         "asamalar": [{"tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama} for s in c.stages],
-        "evraklar": [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu} for d in c.documents]
+        "evraklar": [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu} for d in c.documents],
+        "durusmalar": [{"id": h.id, "tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat, "mahkeme": h.mahkeme, "sonuc": h.sonuc or ""} for h in sorted(c.hearings, key=lambda x: x.tarih)]
     }
 
 @app.get("/api/clients/{client_id}/details")
@@ -182,8 +187,32 @@ def get_client_details(client_id: int, db: Session = Depends(get_db)):
     hesap = c.account
     return {"id": c.id, "tc": c.tc_kimlik, "ad": c.ad_soyad, "tel": c.telefon, "mail": c.eposta, "finans": {"toplam": hesap.toplam_borc if hesap else 0, "odenen": hesap.odenen if hesap else 0, "kalan": (hesap.toplam_borc - hesap.odenen) if hesap else 0}, "dosyalar": [{"id": f.id, "no": f.dosya_no, "durum": f.durum, "kapali": f.is_closed} for f in c.cases]}
 
+# YENİ DURUŞMA ENDPOINTLERİ
+@app.post("/api/cases/{case_id}/hearings")
+def add_hearing(case_id: int, req: HearingCreate, db: Session = Depends(get_db)):
+    db.add(models.Hearing(tarih=req.tarih, saat=req.saat, mahkeme=req.mahkeme, case_id=case_id))
+    db.add(models.CaseStage(aciklama=f"Yeni duruşma eklendi: {req.tarih.strftime('%d.%m.%Y')} - {req.mahkeme}", case_id=case_id))
+    db.commit()
+    return {"mesaj": "Duruşma eklendi."}
+
+@app.delete("/api/hearings/{hearing_id}")
+def delete_hearing(hearing_id: int, db: Session = Depends(get_db)):
+    h = db.query(models.Hearing).filter(models.Hearing.id == hearing_id).first()
+    if h:
+        db.delete(h)
+        db.commit()
+    return {"mesaj": "Duruşma silindi."}
+
+@app.put("/api/hearings/{hearing_id}/result")
+def update_hearing_result(hearing_id: int, req: HearingUpdate, db: Session = Depends(get_db)):
+    h = db.query(models.Hearing).filter(models.Hearing.id == hearing_id).first()
+    if h:
+        h.sonuc = req.sonuc
+        db.commit()
+    return {"mesaj": "Duruşma sonucu kaydedildi."}
+
 @app.get("/api/hearings")
-def get_hearings(db: Session = Depends(get_db)): return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih.asc()).all()]
+def get_hearings(db: Session = Depends(get_db)): return [{"id": h.id, "tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "sonuc": h.sonuc or "", "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih.asc()).all()]
 
 @app.post("/api/expenses")
 def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)): db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar, kdv_orani=req.kdv_orani, odeme_yontemi=req.odeme_yontemi, fatura_no=req.fatura_no)); db.commit(); return {"m": "ok"}
