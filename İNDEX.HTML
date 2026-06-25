@@ -8,24 +8,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg-dark: #1E2126; --bg-panel: #2A2D34; --bg-main: #F3F4F6; --text-light: #E5E7EB; --text-dark: #1F2937; --primary-orange: #F97316; --hover-orange: #EA580C; --border-color: #374151; }
+        :root { 
+            --bg-dark: #1E2126; 
+            --bg-panel: #2A2D34; 
+            --bg-main: #F3F4F6; 
+            --text-light: #E5E7EB; 
+            --text-dark: #1F2937; 
+            --primary-orange: #F97316; 
+            --hover-orange: #EA580C; 
+            --border-color: #374151; 
+        }
+        
+        /* Gece Modu (Dark Theme) Değişkenleri ve Sınıfları */
         body.dark-theme {
-    --bg-main: #121212;
-    --bg-panel: #1E1E1E;
-    --text-dark: #E5E7EB;
-    --border-color: #333;
-}
-body.dark-theme .data-panel, body.dark-theme .stat-card, body.dark-theme .topbar, body.dark-theme .info-box, body.dark-theme .finance-card {
-    background: #1E1E1E !important;
-    color: #E5E7EB;
-    border-color: #333;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-}
-body.dark-theme th { color: #A1A1AA; }
-body.dark-theme td { color: #E5E7EB; border-bottom: 1px solid #333; }
-body.dark-theme .search-bar input { color: #FFF; }
-body.dark-theme .search-bar { background: #333; border-color: #444; }
-body.dark-theme .page-title { color: #E5E7EB; }
+            --bg-main: #121212;
+            --bg-panel: #1E1E1E;
+            --text-dark: #E5E7EB;
+            --border-color: #333;
+        }
+        body.dark-theme .data-panel, body.dark-theme .stat-card, body.dark-theme .topbar, body.dark-theme .info-box, body.dark-theme .finance-card {
+            background: #1E1E1E !important;
+            color: #E5E7EB;
+            border-color: #333;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+        body.dark-theme th { color: #A1A1AA; }
+        body.dark-theme td { color: #E5E7EB; border-bottom: 1px solid #333; }
+        body.dark-theme .search-bar input { color: #FFF; }
+        body.dark-theme .search-bar { background: #333; border-color: #444; }
+        body.dark-theme .page-title { color: #E5E7EB; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--bg-main); overflow: hidden; position: relative; }
 
@@ -170,7 +182,6 @@ body.dark-theme .page-title { color: #E5E7EB; }
     <div id="toast-container" style="position: fixed; top: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; gap: 15px;"></div>
 
     <div id="login-overlay">
-        <!-- STANDART GİRİŞ PANELİ -->
         <div class="login-box" id="login-form-box">
             <i class="fa-solid fa-scale-balanced"></i>
             <h2>MSA Hukuk & Danışmanlık</h2>
@@ -181,7 +192,6 @@ body.dark-theme .page-title { color: #E5E7EB; }
             <button style="background:transparent; color:var(--primary-orange); border:2px solid var(--primary-orange); margin-top:15px;" onclick="document.getElementById('login-form-box').style.display='none'; document.getElementById('inquiry-form-box').style.display='block';">Müvekkil Hızlı Dosya Sorgulama</button>
         </div>
 
-        <!-- MÜVEKKİL SORGULAMA PANELİ -->
         <div class="login-box" id="inquiry-form-box" style="display:none;">
             <i class="fa-solid fa-magnifying-glass"></i>
             <h2>Dosya Durumu Sorgulama</h2>
@@ -376,10 +386,13 @@ body.dark-theme .page-title { color: #E5E7EB; }
                             <input type="text" id="az-edit-tel" class="form-control" placeholder="Telefon">
                             <input type="text" id="az-edit-mail" class="form-control" placeholder="E-Posta">
                             <button class="btn-add" onclick="dosyaVeMuvekkilGuncelle()"><i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet</button>
-                            <button class="btn-action" style="background:#1E3A8A; width: 100%; margin-top: 10px; padding: 10px;" onclick="qrKodGoster()"><i class="fa-solid fa-qrcode"></i> Fiziki Dosya QR Kodunu Çıkar</button>
-<div id="az-qr-container" style="text-align: center; margin-top: 15px; display: none;">
-    <img id="az-qr-image" src="" alt="QR Kod" style="width: 150px; border: 2px solid #D1D5DB; border-radius: 8px;">
-</div>
+                            
+                            <button class="btn-action" style="background:#1E3A8A; width: 100%; margin-top: 10px; padding: 10px;" onclick="qrKodGoster()">
+                                <i class="fa-solid fa-qrcode"></i> Fiziki Dosya QR Kodunu Çıkar
+                            </button>
+                            <div id="az-qr-container" style="text-align: center; margin-top: 15px; display: none;">
+                                <img id="az-qr-image" src="" alt="QR Kod" style="width: 150px; border: 2px solid #D1D5DB; border-radius: 8px;">
+                            </div>
                         </div>
                         
                         <div class="info-box">
@@ -455,26 +468,47 @@ body.dark-theme .page-title { color: #E5E7EB; }
                         <button type="submit" class="btn-add" style="padding:15px; font-size:16px;">Sisteme Güvenli Kaydet</button>
                     </form>
                 </div>
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-    <input type="text" id="filter-active-isim" class="form-control" placeholder="Müvekkil Ara..." onkeyup="aktifDosyaFiltrele()" style="max-width: 200px;">
-    <select id="filter-active-tur" class="form-control" onchange="aktifDosyaFiltrele()" style="max-width: 200px;">
-        <option value="">Tüm Dava Türleri</option>
-        <option value="Dava">Dava</option>
-        <option value="İcra">İcra</option>
-        <option value="Ceza Hukuku">Ceza Hukuku</option>
-        <option value="İş Hukuku">İş Hukuku</option>
-    </select>
-</div>
 
-                <div id="page-cases-active" class="page-section"><h2 class="page-title">Aktif Dosyalar</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Karşı Taraf</th><th>Tür</th><th>Durum</th></tr></thead><tbody id="table-active-cases"></tbody></table></div></div></div>
+                <div id="page-cases-active" class="page-section">
+                    <h2 class="page-title">Aktif Dosyalar</h2>
+                    
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="text" id="filter-active-isim" class="form-control" placeholder="Müvekkil Ara..." onkeyup="aktifDosyaFiltrele()" style="max-width: 200px;">
+                        <select id="filter-active-tur" class="form-control" onchange="aktifDosyaFiltrele()" style="max-width: 200px;">
+                            <option value="">Tüm Dava Türleri</option>
+                            <option value="Dava">Dava</option>
+                            <option value="İcra">İcra</option>
+                            <option value="Ceza Hukuku">Ceza Hukuku</option>
+                            <option value="İş Hukuku">İş Hukuku</option>
+                        </select>
+                    </div>
+
+                    <div class="data-panel">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Karşı Taraf</th><th>Tür</th><th>Durum</th></tr></thead>
+                                <tbody id="table-active-cases"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="page-cases-closed" class="page-section"><h2 class="page-title"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Tür</th><th>Kapanış</th></tr></thead><tbody id="table-closed-cases"></tbody></table></div></div></div>
                 <div id="page-todo-archive" class="page-section"><h2 class="page-title"><i class="fa-solid fa-check-double"></i> Görev ve İşlem Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Görev Detayı</th><th>Tarihler</th><th>Durum</th></tr></thead><tbody id="table-todo-archive"></tbody></table></div></div></div>
+                
                 <div id="page-audit" class="page-section">
                     <h2 class="page-title">
                         <i class="fa-solid fa-user-secret" style="color: var(--primary-orange);"></i> Sistem İşlem Arşivi (Audit Log)
                         <button class="btn-add" style="width:auto; margin-left:auto; background:#10B981;" onclick="tabloyuExcelIndir('table-audit-logs', 'Sistem_Raporu')"><i class="fa-solid fa-file-excel"></i> Raporu Excel'e Aktar</button>
                     </h2>
-                    <div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead><tbody id="table-audit-logs"></tbody></table></div></div>
+                    <div class="data-panel">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead>
+                                <tbody id="table-audit-logs"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="page-client-list" class="page-section"><h2 class="page-title">Bireysel Müvekkiller</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>TC Kimlik</th><th>Ad Soyad</th><th>Telefon</th></tr></thead><tbody id="table-clients"></tbody></table></div></div></div>
@@ -491,6 +525,24 @@ body.dark-theme .page-title { color: #E5E7EB; }
     
     <script>
         const API_URL = "/api"; 
+        let globalActiveCases = []; 
+        let dChart, bChart;
+        let aramaTimer;
+
+        // Sayfa yüklendiğinde Gece Modu temasını hatırla
+        if(localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+            window.onload = function() {
+                const icon = document.getElementById('theme-icon');
+                if (icon) icon.className = "fa-solid fa-sun";
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-theme');
+            document.getElementById('theme-icon').className = isDark ? "fa-solid fa-sun" : "fa-solid fa-moon";
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
 
         async function authFetch(url, options = {}) {
             let token = localStorage.getItem("msa_token");
@@ -559,7 +611,7 @@ body.dark-theme .page-title { color: #E5E7EB; }
                 });
                 document.getElementById("stats-container").style.display = "none";
                 document.getElementById("agenda-panel").style.display = "none";
-                document.getElementById("btn-uyap-sync").style.display = "none"; 
+                document.getElementById("btn-uyap-sync") && (document.getElementById("btn-uyap-sync").style.display = "none"); 
             }
         }
 
@@ -600,8 +652,11 @@ body.dark-theme .page-title { color: #E5E7EB; }
 
         async function islemArsiviniGetir() { 
             try { 
-                const data = await(await authFetch(`${API_URL}/audit-logs`)).json(); 
-                document.getElementById("table-audit-logs").innerHTML = data.map(l => `<tr><td style="color:#6B7280; font-size:12px;"><b>${l.tarih}</b></td><td><span class="badge badge-gray"><i class="fa-solid fa-user"></i> ${l.kullanici}</span></td><td><span class="badge badge-orange">${l.islem}</span></td><td>${l.detay}</td></tr>`).join(""); 
+                const response = await authFetch(`${API_URL}/audit-logs`);
+                const data = await response.json(); 
+                // Backend'deki Pagination güncellemesine uyum sağlamak için: (data.logs varsa onu kullan, yoksa data'yı kullan)
+                const logs = data.logs ? data.logs : data;
+                document.getElementById("table-audit-logs").innerHTML = logs.map(l => `<tr><td style="color:#6B7280; font-size:12px;"><b>${l.tarih}</b></td><td><span class="badge badge-gray"><i class="fa-solid fa-user"></i> ${l.kullanici}</span></td><td><span class="badge badge-orange">${l.islem}</span></td><td>${l.detay}</td></tr>`).join(""); 
             } catch(e){} 
         }
 
@@ -697,7 +752,6 @@ body.dark-theme .page-title { color: #E5E7EB; }
             showToast("Yükleniyor...", "info"); await authFetch(`${API_URL}/cases/${caseId}/upload`, { method: "POST", body: formData }); showToast("Evrak eklendi!", "success"); fileInput.value = ""; detayAc(caseId);
         }
 
-        let dChart, bChart;
         async function finansVerileriniGetir() {
             try {
                 const data = await(await authFetch(`${API_URL}/finance`)).json();
@@ -720,7 +774,35 @@ body.dark-theme .page-title { color: #E5E7EB; }
 
         async function giderSil(id) { if(confirm("Gider kaydını silmek istediğinize emin misiniz?")) { await authFetch(`${API_URL}/expenses/${id}`, { method:"DELETE" }); showToast("Gider silindi.", "success"); finansVerileriniGetir(); } }
         async function durusmalariGetir() { try { const data = await(await authFetch(`${API_URL}/hearings`)).json(); document.getElementById("table-hearings").innerHTML = data.map(h => `<tr class="clickable-row" onclick="detayAc(${h.case_id})"><td><b>${h.tarih}</b></td><td>${h.saat}</td><td>${h.mahkeme}</td><td class="omni-link">${h.dosya_no}</td><td>${h.muvekkil}</td><td><span style="font-size:12px; color:#6B7280;">${h.sonuc || '-'}</span></td></tr>`).join(""); } catch(e) {} }
-        async function tumDosyalariGetir() { try{const d=await(await authFetch(`${API_URL}/all-cases`)).json(); document.getElementById("table-active-cases").innerHTML=d.map(c=>`<tr class="clickable-row" onclick="detayAc(${c.id})"><td class="omni-link">${c.dosya_no}</td><td>${c.muvekkil}</td><td>${c.karsi_taraf}</td><td><span class="badge badge-gray">${c.tur}</span></td><td><span class="badge badge-green">${c.durum}</span></td></tr>`).join("");}catch(e){} }
+        
+        async function tumDosyalariGetir() { 
+            try {
+                const d = await(await authFetch(`${API_URL}/all-cases`)).json(); 
+                globalActiveCases = d; 
+                aktifDosyaFiltrele(); 
+            } catch(e){} 
+        }
+
+        function aktifDosyaFiltrele() {
+            const isimTerm = document.getElementById("filter-active-isim").value.toLowerCase();
+            const turTerm = document.getElementById("filter-active-tur").value;
+            
+            const filtered = globalActiveCases.filter(c => {
+                const isimMatch = c.muvekkil.toLowerCase().includes(isimTerm);
+                const turMatch = turTerm === "" || c.tur === turTerm;
+                return isimMatch && turMatch;
+            });
+            
+            document.getElementById("table-active-cases").innerHTML = filtered.map(c => `
+                <tr class="clickable-row" onclick="detayAc(${c.id})">
+                    <td class="omni-link">${c.dosya_no}</td>
+                    <td>${c.muvekkil}</td>
+                    <td>${c.karsi_taraf}</td>
+                    <td><span class="badge badge-gray">${c.tur}</span></td>
+                    <td><span class="badge badge-green">${c.durum}</span></td>
+                </tr>`).join("");
+        }
+
         async function kapanmisDosyalariGetir() { try{const d=await(await authFetch(`${API_URL}/closed-cases`)).json(); document.getElementById("table-closed-cases").innerHTML=d.map(c=>`<tr class="clickable-row" onclick="detayAc(${c.id})"><td class="omni-link">${c.dosya_no}</td><td>${c.muvekkil}</td><td><span class="badge badge-gray">${c.tur}</span></td><td>${c.kapanis}</td><td><span class="badge badge-red">KAPALI</span></td></tr>`).join("");}catch(e){} }
         async function muvekkilleriGetir() { try{const d=await(await authFetch(`${API_URL}/clients`)).json(); document.getElementById("table-clients").innerHTML=d.map(c=>`<tr><td>${c.tc_kimlik}</td><td>${c.ad_soyad}</td><td>${c.telefon}</td><td>${c.eposta}</td></tr>`).join("");}catch(e){} }
         async function kurumsalGetir() { try{const d=await(await authFetch(`${API_URL}/corporate-clients`)).json(); document.getElementById("table-corporate-clients").innerHTML=d.map(c=>`<tr><td>${c.vergi_no}</td><td>${c.unvan}</td><td>${c.telefon}</td><td>${c.eposta}</td></tr>`).join("");}catch(e){} }
@@ -755,63 +837,22 @@ body.dark-theme .page-title { color: #E5E7EB; }
         async function dilekceUret() { const d = document.getElementById("doc-dosyano").value; const t = document.getElementById("doc-type").value; const det = document.getElementById("doc-detay").value; if(!d) return showToast("Dosya numarası girin.", "error"); showToast("Metin hazırlanıyor...", "info"); try { const r = await authFetch(`${API_URL}/generate-petition`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({dosya_no: d, dilekce_turu: t, detay: det}) }); document.getElementById("petition-output").value = (await r.json()).dilekce_metni; } catch(e) {} }
         function indirWord() { const content = document.getElementById('petition-output').value; if(!content) return showToast("Dilekçe üretilmedi.", "error"); const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Dilekçe</title></head><body>"; const footer = "</body></html>"; const sourceHTML = header + "<div style='font-family: Times New Roman; font-size: 12pt; text-align:justify;'>" + content.replace(/\n/g, '<br>') + "</div>" + footer; const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = 'MSA_Hukuk_Dilekce.doc'; document.body.appendChild(a); a.click(); document.body.removeChild(a); showToast("Word belgesi hatasız olarak indirildi.", "success"); }
         
-        let aramaTimer; async function canliAra(val) { const box = document.getElementById("live-search-results"); clearTimeout(aramaTimer); if(val.length < 3) { box.style.display = "none"; return; } aramaTimer = setTimeout(async () => { try { const res = await authFetch(`${API_URL}/search-client?query=${val}`); const data = await res.json(); if(data.hata) { box.innerHTML = `<div class="ls-item" style="color:red;">${data.hata}</div>`; } else { box.innerHTML = data.map(d => `<div class="ls-item" onclick="detayAc(${d.id}); document.getElementById('live-search-results').style.display='none';"><b>${d.dosya_no}</b> - ${d.muvekkil} <span style="float:right; color:#9CA3AF;">${d.tur}</span></div>`).join(""); } box.style.display = "block"; } catch(e){} }, 300); }
+        async function canliAra(val) { const box = document.getElementById("live-search-results"); clearTimeout(aramaTimer); if(val.length < 3) { box.style.display = "none"; return; } aramaTimer = setTimeout(async () => { try { const res = await authFetch(`${API_URL}/search-client?query=${val}`); const data = await res.json(); if(data.hata) { box.innerHTML = `<div class="ls-item" style="color:red;">${data.hata}</div>`; } else { box.innerHTML = data.map(d => `<div class="ls-item" onclick="detayAc(${d.id}); document.getElementById('live-search-results').style.display='none';"><b>${d.dosya_no}</b> - ${d.muvekkil} <span style="float:right; color:#9CA3AF;">${d.tur}</span></div>`).join(""); } box.style.display = "block"; } catch(e){} }, 300); }
         async function uyapSenkronizasyon() { const btn = document.getElementById("btn-uyap-sync"); btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Çalışıyor...`; try { const res = await authFetch(`${API_URL}/uyap-sync`, {method:"POST"}); const data = await res.json(); showToast(data.mesaj, "success"); } catch(e) { showToast("Sisteminiz UYAP verilerini çekti.", "success"); } btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> UYAP`; }
-    </script>
-function toggleTheme() {
-    const isDark = document.body.classList.toggle('dark-theme');
-    document.getElementById('theme-icon').className = isDark ? "fa-solid fa-sun" : "fa-solid fa-moon";
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-}
 
-// Sayfa yüklendiğinde temayı hatırla (Bunu <script> bloğunun en üstüne koyabilirsin)
-if(localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark-theme');
-    document.getElementById('theme-icon').className = "fa-solid fa-sun";
-}
-let globalActiveCases = []; // Bunu scriptin üst kısımlarında tanımla
-
-// tumDosyalariGetir fonksiyonunu şu şekilde güncelle:
-async function tumDosyalariGetir() { 
-    try {
-        const d = await(await authFetch(`${API_URL}/all-cases`)).json(); 
-        globalActiveCases = d; // Veriyi global değişkene al
-        aktifDosyaFiltrele(); // Tabloyu render et
-    } catch(e){} 
-}
-
-// Filtreleme Algoritması:
-function aktifDosyaFiltrele() {
-    const isimTerm = document.getElementById("filter-active-isim").value.toLowerCase();
-    const turTerm = document.getElementById("filter-active-tur").value;
-    
-    const filtered = globalActiveCases.filter(c => {
-        const isimMatch = c.muvekkil.toLowerCase().includes(isimTerm);
-        const turMatch = turTerm === "" || c.tur === turTerm;
-        return isimMatch && turMatch;
-    });
-    
-    document.getElementById("table-active-cases").innerHTML = filtered.map(c => `
-        <tr class="clickable-row" onclick="detayAc(${c.id})">
-            <td class="omni-link">${c.dosya_no}</td>
-            <td>${c.muvekkil}</td>
-            <td>${c.karsi_taraf}</td>
-            <td><span class="badge badge-gray">${c.tur}</span></td>
-            <td><span class="badge badge-green">${c.durum}</span></td>
-        </tr>`).join("");
-}
-async function qrKodGoster() {
-    const caseId = document.getElementById("az-case-id").value;
-    try {
-        const res = await authFetch(`${API_URL}/cases/${caseId}/qr`);
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById("az-qr-image").src = data.qr_code;
-            document.getElementById("az-qr-container").style.display = "block";
+        async function qrKodGoster() {
+            const caseId = document.getElementById("az-case-id").value;
+            try {
+                const res = await authFetch(`${API_URL}/cases/${caseId}/qr`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("az-qr-image").src = data.qr_code;
+                    document.getElementById("az-qr-container").style.display = "block";
+                }
+            } catch(e) {
+                showToast("QR Kod üretilemedi.", "error");
+            }
         }
-    } catch(e) {
-        showToast("QR Kod üretilemedi.", "error");
-    }
-}
+    </script>
 </body>
 </html>
