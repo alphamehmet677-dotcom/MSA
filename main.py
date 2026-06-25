@@ -145,6 +145,10 @@ def add_payment(client_id: int, req: PaymentCreate, db: Session = Depends(get_db
     if not client or not client.account: raise HTTPException(status_code=404)
     client.account.odenen += req.miktar
     db.add(models.Payment(client_id=client.id, miktar=req.miktar, odeme_yontemi=req.odeme_yontemi, aciklama=req.aciklama, makbuz_no=req.makbuz_no))
+    
+    # YENİ: Arşive kaydet
+    log_action(db, "Sistem", "Finans", f"{client.ad_soyad} adlı müvekkilden {req.miktar} TL tahsilat yapıldı. ({req.odeme_yontemi})")
+    
     db.commit()
     return {"mesaj": "Tahsilat eklendi."}
 
