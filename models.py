@@ -66,9 +66,9 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     miktar = Column(Float)
     tarih = Column(DateTime, default=datetime.utcnow)
-    odeme_yontemi = Column(String, default="Banka") # YENİ: Kasa veya Banka
-    makbuz_no = Column(String, nullable=True) # YENİ: Makbuz numarası
-    aciklama = Column(String, nullable=True) # YENİ: Tahsilat açıklaması
+    odeme_yontemi = Column(String, default="Banka") # Kasa veya Banka
+    makbuz_no = Column(String, nullable=True) 
+    aciklama = Column(String, nullable=True) 
     client_id = Column(Integer, ForeignKey("clients.id"))
     client = relationship("Client", back_populates="payments")
 
@@ -107,6 +107,7 @@ class Hearing(Base):
     tarih = Column(Date)
     saat = Column(String, nullable=True)
     mahkeme = Column(String) 
+    sonuc = Column(Text, nullable=True) # YENİ: Duruşma Sonucu/Notu
     case_id = Column(Integer, ForeignKey("case_files.id"))
     case_file = relationship("CaseFile", back_populates="hearings")
 
@@ -124,7 +125,7 @@ class OfficeExpense(Base):
     kalem = Column(String)
     kategori = Column(String) 
     tutar = Column(Float)
-    kdv_orani = Column(Integer, default=20) # YENİ: KDV oranı
-    odeme_yontemi = Column(String, default="Banka") # YENİ: Kasa veya Banka
-    fatura_no = Column(String, nullable=True) # YENİ: Fatura numarası
+    kdv_orani = Column(Integer, default=20)
+    odeme_yontemi = Column(String, default="Banka")
+    fatura_no = Column(String, nullable=True)
     tarih = Column(Date, default=date.today)
