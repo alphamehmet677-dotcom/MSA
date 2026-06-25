@@ -189,8 +189,7 @@
                 <i class="fa-solid fa-gavel"></i>
                 <h1>Merve Safa Alparslan <br><span>Hukuk & Danışmanlık</span></h1>
             </div>
-            <ul class="menu" id="sidebar-menu-list">
-                </ul>
+            <ul class="menu" id="sidebar-menu-list"></ul>
         </nav>
 
         <main class="main-content">
@@ -289,7 +288,10 @@
                     </div>
 
                     <div class="data-panel" style="margin-top:20px;">
-                        <h2>Ofis Giderleri & Fatura Girişi</h2>
+                        <h2>
+                            Ofis Giderleri & Fatura Girişi 
+                            <button class="btn-action btn-edit" style="float: right;" onclick="tabloyuExcelIndir('table-expenses', 'Gider_Raporu')">Excel Çıktısı Al</button>
+                        </h2>
                         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
                             <input type="text" id="exp-kalem" class="form-control" placeholder="Açıklama / Kurum" style="flex:1; min-width:200px;">
                             <select id="exp-kategori" class="form-control" style="flex:1; min-width:150px;"><option>Kira</option><option>Fatura</option><option>Kırtasiye</option><option>Vergi/Harç</option><option>Diğer</option></select>
@@ -427,25 +429,25 @@
                 </div>
 
                 <div id="page-cases-active" class="page-section"><h2 class="page-title">Aktif Dosyalar</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Karşı Taraf</th><th>Tür</th><th>Durum</th></tr></thead><tbody id="table-active-cases"></tbody></table></div></div></div>
-                
                 <div id="page-cases-closed" class="page-section"><h2 class="page-title"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Tür</th><th>Kapanış</th></tr></thead><tbody id="table-closed-cases"></tbody></table></div></div></div>
                 <div id="page-todo-archive" class="page-section"><h2 class="page-title"><i class="fa-solid fa-check-double"></i> Görev ve İşlem Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Görev Detayı</th><th>Tarihler</th><th>Durum</th></tr></thead><tbody id="table-todo-archive"></tbody></table></div></div></div>
+                
                 <div id="page-audit" class="page-section">
-    <h2 class="page-title">
-        <i class="fa-solid fa-user-secret" style="color: var(--primary-orange);"></i> Sistem İşlem Arşivi (Audit Log)
-        <button class="btn-add" style="width:auto; margin-left:auto; background:#10B981;" onclick="tabloyuExcelIndir('table-audit-logs', 'Sistem_Raporu')">
-            <i class="fa-solid fa-file-excel"></i> Raporu Excel'e Aktar
-        </button>
-    </h2>
-    <div class="data-panel">
-        <div class="table-responsive">
-            <table>
-                <thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead>
-                <tbody id="table-audit-logs"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                    <h2 class="page-title">
+                        <i class="fa-solid fa-user-secret" style="color: var(--primary-orange);"></i> Sistem İşlem Arşivi (Audit Log)
+                        <button class="btn-add" style="width:auto; margin-left:auto; background:#10B981;" onclick="tabloyuExcelIndir('table-audit-logs', 'Sistem_Raporu')">
+                            <i class="fa-solid fa-file-excel"></i> Raporu Excel'e Aktar
+                        </button>
+                    </h2>
+                    <div class="data-panel">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead>
+                                <tbody id="table-audit-logs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
                 <div id="page-client-list" class="page-section"><h2 class="page-title">Bireysel Müvekkiller</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>TC Kimlik</th><th>Ad Soyad</th><th>Telefon</th></tr></thead><tbody id="table-clients"></tbody></table></div></div></div>
                 <div id="page-corporate-list" class="page-section"><h2 class="page-title">Kurumsal Şirketler</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Vergi No</th><th>Unvan</th><th>Telefon</th></tr></thead><tbody id="table-corporate-clients"></tbody></table></div></div></div>
@@ -461,6 +463,31 @@
     
     <script>
         const API_URL = "/api"; 
+
+        // EN KRİTİK EKSİKLİK GİDERİLDİ: Tüm veri alışverişini sağlayan ana fonksiyon.
+        async function authFetch(url, options = {}) {
+            let token = localStorage.getItem("msa_token");
+            let headers = options.headers || {};
+            if(token) headers["Authorization"] = "Bearer " + token;
+            return fetch(url, { ...options, headers });
+        }
+
+        // PROFESYONEL ÖZELLİK: Tabloları Excel'e Aktarma
+        function tabloyuExcelIndir(tableId, dosyaAdi) {
+            let table = document.getElementById(tableId);
+            if (!table) return;
+            let rows = Array.from(table.querySelectorAll("tr"));
+            let csv = rows.map(row => {
+                let cells = Array.from(row.querySelectorAll("th, td"));
+                return cells.map(cell => `"${cell.innerText.replace(/"/g, '""')}"`).join(",");
+            }).join("\n");
+            let blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = dosyaAdi + "_" + new Date().toISOString().slice(0,10) + ".csv";
+            link.click();
+            showToast("Excel dosyası başarıyla indirildi.", "success");
+        }
 
         function showToast(msg, type="success") {
             const container = document.getElementById("toast-container");
@@ -487,29 +514,26 @@
 
         function cikisYap() { localStorage.clear(); location.reload(); }
 
-       function uygulamayaGec() {
-    document.getElementById("login-overlay").style.display = "none";
-    document.getElementById("app-content").style.display = "flex";
-    menuleriYukle();
-    sayfaDegistir('page-dashboard');
+        function uygulamayaGec() {
+            document.getElementById("login-overlay").style.display = "none";
+            document.getElementById("app-content").style.display = "flex";
+            menuleriYukle();
+            sayfaDegistir('page-dashboard');
 
-    // PROFESYONEL ÖZELLİK: Gelişmiş Müvekkil Portalı Kısıtlaması
-    const userRole = localStorage.getItem("msa_role");
-    if(userRole === "Müvekkil") {
-        showToast("Müvekkil Portalı Moduna Geçildi", "info");
-        // Müvekkilin görmemesi gereken menüleri gizle
-        document.querySelectorAll('.menu-item').forEach(item => {
-            const text = item.innerText;
-            if(text.includes("Muhasebe") || text.includes("Kayıtlar") || text.includes("Arşivler") || text.includes("AI Dilekçe")) {
-                item.style.display = "none";
+            const userRole = localStorage.getItem("msa_role");
+            if(userRole === "Müvekkil") {
+                showToast("Müvekkil Portalı Moduna Geçildi", "info");
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    const text = item.innerText;
+                    if(text.includes("Muhasebe") || text.includes("Kayıtlar") || text.includes("Arşivler") || text.includes("AI Dilekçe")) {
+                        item.style.display = "none";
+                    }
+                });
+                document.getElementById("stats-container").style.display = "none";
+                document.getElementById("agenda-panel").style.display = "none";
+                document.getElementById("btn-uyap-sync").style.display = "none"; 
             }
-        });
-        // Gösterge panelindeki ofis özetlerini gizle
-        document.getElementById("stats-container").style.display = "none";
-        document.getElementById("agenda-panel").style.display = "none";
-        document.getElementById("btn-uyap-sync").style.display = "none"; // UYAP butonunu gizle
-    }
-}
+        }
 
         function toggleSidebar() { document.querySelector('.sidebar').classList.toggle('active'); document.querySelector('.sidebar-overlay').classList.toggle('active'); }
         function toggleMenu(btn) { document.querySelectorAll('.menu-item').forEach(i => { if(i !== btn.parentElement) i.classList.remove('active'); }); btn.parentElement.classList.toggle('active'); }
@@ -554,12 +578,14 @@
             else if(id === 'page-todo-archive') ajandaArsiviniGetir();
             else if(id === 'page-audit') islemArsiviniGetir();
         }
+
         async function islemArsiviniGetir() { 
-    try { 
-        const data = await(await authFetch(`${API_URL}/audit-logs`)).json(); 
-        document.getElementById("table-audit-logs").innerHTML = data.map(l => `<tr><td style="color:#6B7280; font-size:12px;"><b>${l.tarih}</b></td><td><span class="badge badge-gray"><i class="fa-solid fa-user"></i> ${l.kullanici}</span></td><td><span class="badge badge-orange">${l.islem}</span></td><td>${l.detay}</td></tr>`).join(""); 
-    } catch(e){} 
-}
+            try { 
+                const data = await(await authFetch(`${API_URL}/audit-logs`)).json(); 
+                document.getElementById("table-audit-logs").innerHTML = data.map(l => `<tr><td style="color:#6B7280; font-size:12px;"><b>${l.tarih}</b></td><td><span class="badge badge-gray"><i class="fa-solid fa-user"></i> ${l.kullanici}</span></td><td><span class="badge badge-orange">${l.islem}</span></td><td>${l.detay}</td></tr>`).join(""); 
+            } catch(e){} 
+        }
+
         async function sayfaVerileriniYukle() {
             try {
                 const statsRes = await authFetch(`${API_URL}/dashboard-stats`);
@@ -703,7 +729,6 @@
             } catch(e){}
         }
 
-        // DÜZELTİLDİ: Tıklandığında arayüzdeki kutuları anında temizleyen ve tabloyu güvenle çeken fonksiyon
         async function yeniGiderEkle() {
             const data = {
                 kalem: document.getElementById("exp-kalem").value,
@@ -736,7 +761,7 @@
         
         async function yeniKayitOlustur(e) { e.preventDefault(); const data = { tc_kimlik: document.getElementById("form-tc").value, ad_soyad: document.getElementById("form-ad").value, telefon: document.getElementById("form-tel").value, eposta: document.getElementById("form-eposta").value, dosya_no: document.getElementById("form-dosyano").value, karsi_taraf: document.getElementById("form-karsi").value, tur: document.getElementById("form-tur").value, anlasilan_ucret: parseFloat(document.getElementById("form-ucret").value) || 0 }; await authFetch(`${API_URL}/add-client-case`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) }); showToast("Kayıt oluşturuldu", "success"); sayfaDegistir('page-cases-active'); }
         async function gorevleriGetir() { const t = await(await authFetch(`${API_URL}/todos`)).json(); document.getElementById("todo-list-container").innerHTML = t.map(x => `<li style="padding:15px; background:#F9FAFB; margin-bottom:8px; border-radius:8px; border-left:4px solid var(--primary-orange);"><b>${x.task}</b> <br><span style="font-size:12px; color:#6B7280;">${x.detay}</span> <i class="fa-solid fa-check" style="float:right; color:#16A34A; cursor:pointer;" onclick="gorevTamamla(${x.id})"></i></li>`).join(""); }
-        async function yeniGorevEkle() { const i = document.getElementById('new-task-input'); await authFetch(`${API_URL}/todos`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({task: i.value, detay: document.getElementById('new-task-detay').value}) }); showToast("Eklendi", "success"); sayfaVerileriniYukle(); }
+        async function yeniGorevEkle() { const i = document.getElementById('new-task-input'); await authFetch(`${API_URL}/todos`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({task: i.value, detay: document.getElementById('new-task-detay').value}) }); showToast("Eklendi", "success"); document.getElementById('new-task-input').value = ""; document.getElementById('new-task-detay').value = ""; sayfaVerileriniYukle(); }
         async function gorevTamamla(id) { await authFetch(`${API_URL}/todos/${id}/toggle`, {method:"PUT"}); sayfaVerileriniYukle(); }
         async function ajandaArsiviniGetir() { try { const data = await(await authFetch(`${API_URL}/todos/archive`)).json(); document.getElementById("table-todo-archive").innerHTML = data.map(t => { let bClass = t.status === "Tamamlandı" ? "badge-green" : "badge-red"; return `<tr><td style="text-decoration:line-through; color:#6B7280;"><b>${t.task}</b><br><span style="font-size:11px;">${t.detay}</span></td><td><span style="font-size:12px">Eklenme: ${t.eklenme}<br>Kapanış: ${t.bitis}</span></td><td><span class="badge ${bClass}">${t.status}</span></td></tr>`; }).join(""); } catch(e) {} }
 
@@ -757,19 +782,3 @@
     </script>
 </body>
 </html>
-function tabloyuExcelIndir(tableId, dosyaAdi) {
-    let table = document.getElementById(tableId);
-    if (!table) return;
-    let rows = Array.from(table.querySelectorAll("tr"));
-    let csv = rows.map(row => {
-        let cells = Array.from(row.querySelectorAll("th, td"));
-        return cells.map(cell => `"${cell.innerText.replace(/"/g, '""')}"`).join(",");
-    }).join("\n");
-
-    let blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-    let link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = dosyaAdi + "_" + new Date().toISOString().slice(0,10) + ".csv";
-    link.click();
-    showToast("Excel dosyası başarıyla indirildi.", "success");
-}
