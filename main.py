@@ -35,6 +35,7 @@ def safe_verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 models.Base.metadata.create_all(bind=engine)
+
 def log_action(db: Session, kullanici: str, islem_tipi: str, detay: str):
     yeni_log = models.AuditLog(kullanici=kullanici, islem_tipi=islem_tipi, detay=detay)
     db.add(yeni_log)
@@ -87,7 +88,6 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         return {"token": jwt.encode({"sub": user.username, "role": "Avukat", "ad": user.ad_soyad}, SECRET_KEY, algorithm="HS256"), "role": "Avukat", "ad_soyad": user.ad_soyad}
     
     client = db.query(models.Client).filter(models.Client.tc_kimlik == req.username).first()
-    # AŞAĞIDAKİ 3 SATIRDA client.password YERİNE client.password_hash KULLANILMALIDIR
     if client and safe_verify_password(req.password, client.password_hash):
         if client.password_hash == req.password:
             client.password_hash = get_password_hash(req.password)
@@ -100,7 +100,6 @@ def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
     if not client:
         default_pw = get_password_hash("123456")
-        # BURADA password YERİNE password_hash KULLANILMALIDIR
         client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password_hash=default_pw)
         db.add(client); db.commit(); db.refresh(client)
     else:
@@ -114,6 +113,7 @@ def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     if not client.account: db.add(models.Account(client_id=client.id, toplam_borc=data.anlasilan_ucret, odenen=0.0))
     else: client.account.toplam_borc += data.anlasilan_ucret
     db.add(models.CaseStage(aciklama="Dosya sisteme kaydedildi.", case_id=yeni_dosya.id))
+    log_action(db, "Sistem", "Dosya Açılışı", f"{data.ad_soyad} için {data.dosya_no} numaralı dosya eklendi.")
     db.commit()
     return {"mesaj": "Başarılı"}
 
@@ -128,6 +128,7 @@ def update_case_all(case_id: int, req: CaseClientUpdate, db: Session = Depends(g
     fark = req.anlasilan_ucret - eski_ucret
     if client.account: client.account.toplam_borc += fark
     db.add(models.CaseStage(aciklama="Dosya bilgileri güncellendi.", case_id=case.id))
+    log_action(db, "Sistem", "Güncelleme", f"{case.dosya_no} numaralı dosyanın bilgileri güncellendi.")
     db.commit()
     return {"mesaj": "Tüm bilgiler güncellendi."}
 
@@ -136,6 +137,7 @@ def delete_case(case_id: int, db: Session = Depends(get_db)):
     case = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
     if case:
         if case.owner.account: case.owner.account.toplam_borc -= case.anlasilan_ucret
+        log_action(db, "Sistem", "Dosya Silme", f"{case.dosya_no} numaralı dosya sistemden silindi.")
         db.delete(case); db.commit()
     return {"mesaj": "Silindi."}
 
@@ -145,10 +147,7 @@ def add_payment(client_id: int, req: PaymentCreate, db: Session = Depends(get_db
     if not client or not client.account: raise HTTPException(status_code=404)
     client.account.odenen += req.miktar
     db.add(models.Payment(client_id=client.id, miktar=req.miktar, odeme_yontemi=req.odeme_yontemi, aciklama=req.aciklama, makbuz_no=req.makbuz_no))
-    
-    # YENİ: Arşive kaydet
     log_action(db, "Sistem", "Finans", f"{client.ad_soyad} adlı müvekkilden {req.miktar} TL tahsilat yapıldı. ({req.odeme_yontemi})")
-    
     db.commit()
     return {"mesaj": "Tahsilat eklendi."}
 
@@ -179,7 +178,6 @@ def get_clients(db: Session = Depends(get_db)): return [{"id": c.id, "tc_kimlik"
 @app.get("/api/corporate-clients")
 def get_corporate_clients(db: Session = Depends(get_db)): return [{"id": c.id, "vergi_no": c.tc_kimlik, "unvan": c.ad_soyad, "telefon": c.telefon, "eposta": c.eposta} for c in db.query(models.Client).filter(models.Client.kurumsal_mi == True).all()]
 
-# BURASI ÇÖKMEYİ ENGELLEYEN EN KRİTİK NOKTADIR. HİÇBİR ZAMAN DEĞİŞTİRME.
 @app.get("/api/finance")
 def get_finance(db: Session = Depends(get_db)):
     accounts = db.query(models.Account).all()
@@ -230,6 +228,7 @@ def get_client_details(client_id: int, db: Session = Depends(get_db)):
 def add_hearing(case_id: int, req: HearingCreate, db: Session = Depends(get_db)):
     db.add(models.Hearing(tarih=req.tarih, saat=req.saat, mahkeme=req.mahkeme, case_id=case_id))
     db.add(models.CaseStage(aciklama=f"Yeni duruşma eklendi: {req.tarih.strftime('%d.%m.%Y')} - {req.mahkeme}", case_id=case_id))
+    log_action(db, "Sistem", "Duruşma", f"Dosyaya yeni duruşma eklendi: {req.mahkeme}")
     db.commit()
     return {"mesaj": "Duruşma eklendi."}
 
@@ -249,7 +248,11 @@ def update_hearing_result(hearing_id: int, req: HearingUpdate, db: Session = Dep
 def get_hearings(db: Session = Depends(get_db)): return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "sonuc": h.sonuc or "", "dosya_no": h.case_file.dosya_no if h.case_file else "-", "muvekkil": h.case_file.owner.ad_soyad if (h.case_file and h.case_file.owner) else "-", "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih.asc()).all()]
 
 @app.post("/api/expenses")
-def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)): db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar, kdv_orani=req.kdv_orani, odeme_yontemi=req.odeme_yontemi, fatura_no=req.fatura_no)); db.commit(); return {"m": "ok"}
+def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)): 
+    db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar, kdv_orani=req.kdv_orani, odeme_yontemi=req.odeme_yontemi, fatura_no=req.fatura_no))
+    log_action(db, "Sistem", "Gider İşlemi", f"{req.tutar} ₺ tutarında yeni ofis gideri eklendi.")
+    db.commit()
+    return {"m": "ok"}
 
 @app.delete("/api/expenses/{expense_id}")
 def delete_expense(expense_id: int, db: Session = Depends(get_db)): e = db.query(models.OfficeExpense).filter(models.OfficeExpense.id == expense_id).first(); db.delete(e); db.commit(); return {"m": "ok"}
@@ -283,6 +286,7 @@ def upload_document(case_id: int, file: UploadFile = File(...), db: Session = De
         except: pass
     db.add(models.Document(evrak_adi=file.filename, dosya_yolu=yolu, ocr_text=ocr_sonucu, case_id=case_id))
     db.add(models.CaseStage(aciklama=f"Evrak eklendi: {file.filename}", case_id=case_id))
+    log_action(db, "Sistem", "Evrak Yükleme", f"Sisteme '{file.filename}' yüklendi.")
     db.commit()
     return {"m": "ok"}
 
@@ -303,8 +307,8 @@ def search_client(query: str, db: Session = Depends(get_db)):
 @app.post("/api/uyap-sync")
 def uyap_sync(db: Session = Depends(get_db)):
     return {"mesaj": "Sisteminiz UYAP verilerini başarıyla çekti."}
+
 @app.get("/api/audit-logs")
 def get_audit_logs(db: Session = Depends(get_db)):
-    # Son 100 işlemi en yeniden eskiye doğru sıralayarak getirir
     logs = db.query(models.AuditLog).order_by(models.AuditLog.id.desc()).limit(100).all()
     return [{"kullanici": l.kullanici, "islem": l.islem_tipi, "detay": l.detay, "tarih": l.tarih.strftime("%d.%m.%Y %H:%M")} for l in logs]
