@@ -376,6 +376,10 @@ body.dark-theme .page-title { color: #E5E7EB; }
                             <input type="text" id="az-edit-tel" class="form-control" placeholder="Telefon">
                             <input type="text" id="az-edit-mail" class="form-control" placeholder="E-Posta">
                             <button class="btn-add" onclick="dosyaVeMuvekkilGuncelle()"><i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet</button>
+                            <button class="btn-action" style="background:#1E3A8A; width: 100%; margin-top: 10px; padding: 10px;" onclick="qrKodGoster()"><i class="fa-solid fa-qrcode"></i> Fiziki Dosya QR Kodunu Çıkar</button>
+<div id="az-qr-container" style="text-align: center; margin-top: 15px; display: none;">
+    <img id="az-qr-image" src="" alt="QR Kod" style="width: 150px; border: 2px solid #D1D5DB; border-radius: 8px;">
+</div>
                         </div>
                         
                         <div class="info-box">
@@ -795,6 +799,19 @@ function aktifDosyaFiltrele() {
             <td><span class="badge badge-gray">${c.tur}</span></td>
             <td><span class="badge badge-green">${c.durum}</span></td>
         </tr>`).join("");
+}
+async function qrKodGoster() {
+    const caseId = document.getElementById("az-case-id").value;
+    try {
+        const res = await authFetch(`${API_URL}/cases/${caseId}/qr`);
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById("az-qr-image").src = data.qr_code;
+            document.getElementById("az-qr-container").style.display = "block";
+        }
+    } catch(e) {
+        showToast("QR Kod üretilemedi.", "error");
+    }
 }
 </body>
 </html>
