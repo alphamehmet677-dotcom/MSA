@@ -214,7 +214,7 @@
                 <div class="bg-watermark"><i class="fa-solid fa-scale-balanced"></i></div>
                 
                 <div id="page-dashboard" class="page-section active-page">
-                    <h2 class="page-title"><i class="fa-solid fa-chart-pie" style="color: var(--primary-orange);"></i> Gösterge Paneli ve Ajanda</h2>
+                    <h2 class="page-title"><i class="fa-solid fa-chart-pie" style="color: var(--primary-orange);"></i> Gösterge Paneli</h2>
                     
                     <div class="stats-grid" id="stats-container">
                         <div class="stat-card"><div class="stat-info"><h3 id="st-muv">0</h3><p>Müvekkil</p></div><div class="stat-icon"><i class="fa-solid fa-users"></i></div></div>
@@ -231,7 +231,7 @@
                             </div>
                         </div>
                         <div class="data-panel" id="agenda-panel">
-                            <h2><i class="fa-solid fa-list-check" style="color:var(--primary-orange);"></i> Görev Ajandası</h2>
+                            <h2><i class="fa-solid fa-list-check" style="color:var(--primary-orange);"></i> Bekleyen Görevler</h2>
                             <div style="display:flex; gap:5px; margin-bottom:15px; flex-direction:column;">
                                 <input type="text" id="new-task-input" class="form-control" placeholder="Görev Başlığı...">
                                 <input type="text" id="new-task-detay" class="form-control" placeholder="Detay / Dosya No">
@@ -427,8 +427,10 @@
                 </div>
 
                 <div id="page-cases-active" class="page-section"><h2 class="page-title">Aktif Dosyalar</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Karşı Taraf</th><th>Tür</th><th>Durum</th></tr></thead><tbody id="table-active-cases"></tbody></table></div></div></div>
+                
                 <div id="page-cases-closed" class="page-section"><h2 class="page-title"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Tür</th><th>Kapanış</th></tr></thead><tbody id="table-closed-cases"></tbody></table></div></div></div>
                 <div id="page-todo-archive" class="page-section"><h2 class="page-title"><i class="fa-solid fa-check-double"></i> Görev ve İşlem Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Görev Detayı</th><th>Tarihler</th><th>Durum</th></tr></thead><tbody id="table-todo-archive"></tbody></table></div></div></div>
+                
                 <div id="page-client-list" class="page-section"><h2 class="page-title">Bireysel Müvekkiller</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>TC Kimlik</th><th>Ad Soyad</th><th>Telefon</th></tr></thead><tbody id="table-clients"></tbody></table></div></div></div>
                 <div id="page-corporate-list" class="page-section"><h2 class="page-title">Kurumsal Şirketler</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Vergi No</th><th>Unvan</th><th>Telefon</th></tr></thead><tbody id="table-corporate-clients"></tbody></table></div></div></div>
                 
@@ -455,7 +457,6 @@
             const u = document.getElementById("login-username").value;
             const p = document.getElementById("login-password").value;
             if(!u || !p) return showToast("Lütfen boş alan bırakmayın.", "error");
-            
             try {
                 const res = await fetch(`${API_URL}/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username: u, password: p})});
                 if(res.ok) {
@@ -464,12 +465,8 @@
                     localStorage.setItem("msa_role", data.role);
                     document.getElementById("logged-user-name").innerText = data.ad_soyad;
                     uygulamayaGec();
-                } else { 
-                    showToast("Girdiğiniz kimlik bilgileri hatalı.", "error"); 
-                }
-            } catch(e) { 
-                showToast("Sunucuya bağlanılamadı. Lütfen backend'i kontrol edin.", "error"); 
-            }
+                } else { showToast("Girdiğiniz bilgiler hatalı.", "error"); }
+            } catch(e) { showToast("Sunucu hatası.", "error"); }
         }
 
         function cikisYap() { localStorage.clear(); location.reload(); }
@@ -483,6 +480,7 @@
 
         if(localStorage.getItem("msa_token")) { uygulamayaGec(); }
 
+        // ÖNELLEK KIRICI
         async function authFetch(url, options = {}) {
             const token = localStorage.getItem("msa_token");
             const headers = { ...options.headers };
@@ -503,7 +501,7 @@
         function menuleriYukle() {
             const menu = document.getElementById("sidebar-menu-list");
             menu.innerHTML = `
-                <li class="menu-item active"><button class="menu-btn" onclick="sayfaDegistir('page-dashboard'); toggleMenu(this)"><div><i class="fa-solid fa-chart-pie icon-main"></i> Gösterge Paneli & Ajanda</div></button></li>
+                <li class="menu-item active"><button class="menu-btn" onclick="sayfaDegistir('page-dashboard'); toggleMenu(this)"><div><i class="fa-solid fa-chart-pie icon-main"></i> Gösterge Paneli</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-finance'); toggleMenu(this)"><div><i class="fa-solid fa-file-invoice-dollar icon-main"></i> Kapsamlı Muhasebe</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-hearings'); toggleMenu(this)"><div><i class="fa-solid fa-gavel icon-main"></i> Duruşma Takvimi</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="toggleMenu(this)"><div><i class="fa-solid fa-scale-balanced icon-main"></i> Dosyalar & Kayıtlar</div><i class="fa-solid fa-chevron-down"></i></button>
@@ -542,28 +540,24 @@
         async function sayfaVerileriniYukle() {
             try {
                 const statsRes = await authFetch(`${API_URL}/dashboard-stats`);
-                if(statsRes.ok) {
-                    const stats = await statsRes.json();
-                    document.getElementById("st-muv").innerText = stats.aktif_muvekkil;
-                    document.getElementById("st-dava").innerText = stats.acik_dava;
-                    document.getElementById("st-gorev").innerText = stats.bekleyen_gorev;
-                    document.getElementById("st-durusma").innerText = stats.bu_hafta_durusma;
-                }
+                if(!statsRes.ok) throw new Error("API");
+                const stats = await statsRes.json();
                 
-                const casesRes = await authFetch(`${API_URL}/recent-cases`);
-                if(casesRes.ok) {
-                    const cases = await casesRes.json();
-                    document.getElementById("table-recent-cases").innerHTML = cases.map(c => `
-                        <tr class="clickable-row" onclick="detayAc(${c.id})">
-                            <td class="omni-link"><i class="fa-solid fa-folder-open"></i> ${c.dosya_no}</td>
-                            <td>${c.muvekkil}</td>
-                            <td><span class="badge badge-gray">${c.tur}</span></td>
-                            <td><span class="badge badge-orange">${c.durum}</span></td>
-                        </tr>`).join("");
-                }
+                document.getElementById("st-muv").innerText = stats.aktif_muvekkil;
+                document.getElementById("st-dava").innerText = stats.acik_dava;
+                document.getElementById("st-gorev").innerText = stats.bekleyen_gorev;
+                document.getElementById("st-durusma").innerText = stats.bu_hafta_durusma;
                 
+                const cases = await (await authFetch(`${API_URL}/recent-cases`)).json();
+                document.getElementById("table-recent-cases").innerHTML = cases.map(c => `
+                    <tr class="clickable-row" onclick="detayAc(${c.id})">
+                        <td class="omni-link"><i class="fa-solid fa-folder-open"></i> ${c.dosya_no}</td>
+                        <td>${c.muvekkil}</td>
+                        <td><span class="badge badge-gray">${c.tur}</span></td>
+                        <td><span class="badge badge-orange">${c.durum}</span></td>
+                    </tr>`).join("");
                 gorevleriGetir();
-            } catch(e) { console.error("Sayfa veri yükleme hatası", e); }
+            } catch(e) { console.error(e); }
         }
 
         async function detayAc(caseId) {
@@ -646,20 +640,15 @@
             await authFetch(`${API_URL}/cases/${caseId}/update-all`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)}); showToast("Tüm bilgiler güncellendi.", "success"); detayAc(caseId);
         }
 
-        // GÜNCELLEME: Tahsilat işlemini gerçekleştirip form alanlarını temizleme
         async function tahsilatEkle() {
             const clientId = document.getElementById("az-client-id").value; const caseId = document.getElementById("az-case-id").value;
             const miktar = parseFloat(document.getElementById("az-payment-amount").value);
             const yontem = document.getElementById("az-payment-method").value;
             const aciklama = document.getElementById("az-payment-desc").value;
-            
             if(!miktar || miktar <= 0) return showToast("Geçerli bir tutar girin.", "error");
-            
             await authFetch(`${API_URL}/clients/${clientId}/payments`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({miktar: miktar, odeme_yontemi: yontem, aciklama: aciklama, makbuz_no: ""})});
-            showToast(`Tahsilat ${yontem} hesabına işlendi. Muhasebe güncellendi.`, "success");
-            
-            document.getElementById("az-payment-amount").value = ""; 
-            document.getElementById("az-payment-desc").value = "";
+            showToast(`Tahsilat ${yontem} hesabına işlendi.`, "success");
+            document.getElementById("az-payment-amount").value = ""; document.getElementById("az-payment-desc").value = "";
             detayAc(caseId);
         }
 
@@ -675,9 +664,7 @@
         let dChart, bChart;
         async function finansVerileriniGetir() {
             try {
-                const res = await authFetch(`${API_URL}/finance`);
-                if(!res.ok) throw new Error("Finans veri hatası");
-                const data = await res.json();
+                const data = await(await authFetch(`${API_URL}/finance`)).json();
                 
                 document.getElementById("fin-kasa").innerText = `${data.kasa_bakiye.toLocaleString("tr-TR")} ₺`;
                 document.getElementById("fin-banka").innerText = `${data.banka_bakiye.toLocaleString("tr-TR")} ₺`;
@@ -690,12 +677,10 @@
                 if(dChart) dChart.destroy(); if(bChart) bChart.destroy();
                 dChart = new Chart(document.getElementById('financeDoughnut'), { type:'doughnut', data:{labels:['Bu Ayki Gelir','Bu Ayki Gider'],datasets:[{data:[data.ozet.aylik_gelir, data.ozet.aylik_gider], backgroundColor:['#16A34A', '#EF4444'], borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false} });
                 bChart = new Chart(document.getElementById('financeBar'), { type:'bar', data:{labels:['Bu Ayın Net Bilançosu'],datasets:[{label:'Tahsilat (Gelir)', data:[data.ozet.aylik_gelir], backgroundColor:'#16A34A'}, {label:'Ofis Giderleri', data:[data.ozet.aylik_gider], backgroundColor:'#EF4444'}]}, options:{responsive:true, maintainAspectRatio:false} });
-            } catch(e){
-                console.error(e);
-            }
+            } catch(e){}
         }
 
-        // GÜNCELLEME: Giderleri işledikten sonra kutuları temizleme ve tabloyu anında güncelleme
+        // DÜZELTİLDİ: Tıklandığında arayüzdeki kutuları anında temizleyen ve tabloyu güvenle çeken fonksiyon
         async function yeniGiderEkle() {
             const data = {
                 kalem: document.getElementById("exp-kalem").value,
@@ -713,7 +698,7 @@
             document.getElementById("exp-kalem").value = "";
             document.getElementById("exp-faturano").value = "";
             document.getElementById("exp-tutar").value = "";
-            
+
             finansVerileriniGetir();
         }
 
@@ -728,19 +713,8 @@
         
         async function yeniKayitOlustur(e) { e.preventDefault(); const data = { tc_kimlik: document.getElementById("form-tc").value, ad_soyad: document.getElementById("form-ad").value, telefon: document.getElementById("form-tel").value, eposta: document.getElementById("form-eposta").value, dosya_no: document.getElementById("form-dosyano").value, karsi_taraf: document.getElementById("form-karsi").value, tur: document.getElementById("form-tur").value, anlasilan_ucret: parseFloat(document.getElementById("form-ucret").value) || 0 }; await authFetch(`${API_URL}/add-client-case`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) }); showToast("Kayıt oluşturuldu", "success"); sayfaDegistir('page-cases-active'); }
         async function gorevleriGetir() { const t = await(await authFetch(`${API_URL}/todos`)).json(); document.getElementById("todo-list-container").innerHTML = t.map(x => `<li style="padding:15px; background:#F9FAFB; margin-bottom:8px; border-radius:8px; border-left:4px solid var(--primary-orange);"><b>${x.task}</b> <br><span style="font-size:12px; color:#6B7280;">${x.detay}</span> <i class="fa-solid fa-check" style="float:right; color:#16A34A; cursor:pointer;" onclick="gorevTamamla(${x.id})"></i></li>`).join(""); }
-        
-        // GÜNCELLEME: Ajandaya Görev Ekleyince inputları temizleme ve ajandayı anında yenileme
-        async function yeniGorevEkle() { 
-            const i = document.getElementById('new-task-input'); 
-            const d = document.getElementById('new-task-detay');
-            if(!i.value) return showToast("Görev başlığı girmediniz.", "error");
-            await authFetch(`${API_URL}/todos`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({task: i.value, detay: d.value}) }); 
-            showToast("Görev Ajandaya Eklendi", "success"); 
-            i.value = ""; d.value = "";
-            sayfaVerileriniYukle(); 
-        }
-
-        async function gorevTamamla(id) { await authFetch(`${API_URL}/todos/${id}/toggle`, {method:"PUT"}); showToast("Görev tamamlandı.", "success"); sayfaVerileriniYukle(); }
+        async function yeniGorevEkle() { const i = document.getElementById('new-task-input'); await authFetch(`${API_URL}/todos`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({task: i.value, detay: document.getElementById('new-task-detay').value}) }); showToast("Eklendi", "success"); sayfaVerileriniYukle(); }
+        async function gorevTamamla(id) { await authFetch(`${API_URL}/todos/${id}/toggle`, {method:"PUT"}); sayfaVerileriniYukle(); }
         async function ajandaArsiviniGetir() { try { const data = await(await authFetch(`${API_URL}/todos/archive`)).json(); document.getElementById("table-todo-archive").innerHTML = data.map(t => { let bClass = t.status === "Tamamlandı" ? "badge-green" : "badge-red"; return `<tr><td style="text-decoration:line-through; color:#6B7280;"><b>${t.task}</b><br><span style="font-size:11px;">${t.detay}</span></td><td><span style="font-size:12px">Eklenme: ${t.eklenme}<br>Kapanış: ${t.bitis}</span></td><td><span class="badge ${bClass}">${t.status}</span></td></tr>`; }).join(""); } catch(e) {} }
 
         async function sendChatMessage() { const input = document.getElementById('chat-input'); const msg = input.value.trim(); if (!msg) return; const chatBox = document.getElementById('chat-messages'); chatBox.innerHTML += `<div class="msg msg-user">${msg}</div>`; input.value = ''; chatBox.scrollTop = chatBox.scrollHeight; try { const res = await authFetch(`${API_URL}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({message: msg}) }); const data = await res.json(); chatBox.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`; chatBox.scrollTop = chatBox.scrollHeight; } catch (e) {} }
