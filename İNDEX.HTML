@@ -430,7 +430,23 @@
                 
                 <div id="page-cases-closed" class="page-section"><h2 class="page-title"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Tür</th><th>Kapanış</th></tr></thead><tbody id="table-closed-cases"></tbody></table></div></div></div>
                 <div id="page-todo-archive" class="page-section"><h2 class="page-title"><i class="fa-solid fa-check-double"></i> Görev ve İşlem Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Görev Detayı</th><th>Tarihler</th><th>Durum</th></tr></thead><tbody id="table-todo-archive"></tbody></table></div></div></div>
-                
+                <div id="page-audit" class="page-section">
+    <h2 class="page-title">
+        <i class="fa-solid fa-user-secret" style="color: var(--primary-orange);"></i> Sistem İşlem Arşivi (Audit Log)
+        <button class="btn-add" style="width:auto; margin-left:auto; background:#10B981;" onclick="tabloyuExcelIndir('table-audit-logs', 'Sistem_Raporu')">
+            <i class="fa-solid fa-file-excel"></i> Raporu Excel'e Aktar
+        </button>
+    </h2>
+    <div class="data-panel">
+        <div class="table-responsive">
+            <table>
+                <thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead>
+                <tbody id="table-audit-logs"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
                 <div id="page-client-list" class="page-section"><h2 class="page-title">Bireysel Müvekkiller</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>TC Kimlik</th><th>Ad Soyad</th><th>Telefon</th></tr></thead><tbody id="table-clients"></tbody></table></div></div></div>
                 <div id="page-corporate-list" class="page-section"><h2 class="page-title">Kurumsal Şirketler</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Vergi No</th><th>Unvan</th><th>Telefon</th></tr></thead><tbody id="table-corporate-clients"></tbody></table></div></div></div>
                 
