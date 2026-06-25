@@ -153,13 +153,25 @@
     <div id="toast-container" style="position: fixed; top: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; gap: 15px;"></div>
 
     <div id="login-overlay">
-        <div class="login-box">
+        <div class="login-box" id="login-form-box">
             <i class="fa-solid fa-scale-balanced"></i>
             <h2>MSA Hukuk & Danışmanlık</h2>
             <p style="margin-bottom: 10px;">Lütfen sisteme giriş yapınız.</p>
             <input type="text" id="login-username" placeholder="Kullanıcı Adı / T.C. Kimlik No">
-            <input type="password" id="login-password" placeholder="Şifre" onkeypress="if(event.key==='Enter') sistemGiris()">
+            <input type="password" id="login-password" placeholder="Şifre (Müvekkiller: Doğum Tarihi GG.AA.YYYY)" onkeypress="if(event.key==='Enter') sistemGiris()">
             <button onclick="sistemGiris()">Sisteme Giriş Yap</button>
+            <button style="background:transparent; color:var(--primary-orange); border:2px solid var(--primary-orange); margin-top:15px;" onclick="document.getElementById('login-form-box').style.display='none'; document.getElementById('inquiry-form-box').style.display='block';">Müvekkil Hızlı Dosya Sorgulama</button>
+        </div>
+
+        <div class="login-box" id="inquiry-form-box" style="display:none;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <h2>Dosya Durumu Sorgulama</h2>
+            <p style="margin-bottom: 10px;">Dosya numaranız ile anlık durumunuzu sorgulayın.</p>
+            <input type="text" id="inq-tc" placeholder="T.C. Kimlik Numaranız">
+            <input type="text" id="inq-dosya" placeholder="Dosya No (Örn: 2026/123 Esas)">
+            <button onclick="hizliSorgula()">Dosya Durumunu Öğren</button>
+            <button style="background:transparent; color:#6B7280; margin-top:10px;" onclick="document.getElementById('inquiry-form-box').style.display='none'; document.getElementById('login-form-box').style.display='block';">Geri Dön</button>
+            <div id="inq-result" style="margin-top:15px; font-size:14px; background:#FAFAFA; padding:15px; border-radius:6px; display:none; border:1px solid #D1D5DB; text-align:left;"></div>
         </div>
     </div>
 
@@ -339,26 +351,24 @@
                             </div>
                         </div>
 
-                        <div class="info-box">
+                        <div class="info-box" id="az-edit-section">
                             <h4><i class="fa-solid fa-scale-balanced"></i> Dosya & Düzenleme</h4>
-                            <div id="az-edit-section">
-                                <label style="font-size:12px; font-weight:bold;">Karşı Taraf</label>
-                                <input type="text" id="az-edit-karsi" class="form-control">
-                                <label style="font-size:12px; font-weight:bold;">Güncel Durum / Aşama</label>
-                                <input type="text" id="az-edit-durum" class="form-control">
-                                <label style="font-size:12px; font-weight:bold;">Dosya Sözleşme Ücreti ₺</label>
-                                <input type="number" id="az-edit-ucret" class="form-control">
-                                <label style="font-size:12px; font-weight:bold;">Müvekkil İletişim Bilgileri</label>
-                                <input type="text" id="az-edit-tel" class="form-control" placeholder="Telefon">
-                                <input type="text" id="az-edit-mail" class="form-control" placeholder="E-Posta">
-                                <button class="btn-add" onclick="dosyaVeMuvekkilGuncelle()"><i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet</button>
-                            </div>
+                            <label style="font-size:12px; font-weight:bold;">Karşı Taraf</label>
+                            <input type="text" id="az-edit-karsi" class="form-control">
+                            <label style="font-size:12px; font-weight:bold;">Güncel Durum / Aşama</label>
+                            <input type="text" id="az-edit-durum" class="form-control">
+                            <label style="font-size:12px; font-weight:bold;">Dosya Sözleşme Ücreti ₺</label>
+                            <input type="number" id="az-edit-ucret" class="form-control">
+                            <label style="font-size:12px; font-weight:bold;">Müvekkil İletişim Bilgileri</label>
+                            <input type="text" id="az-edit-tel" class="form-control" placeholder="Telefon">
+                            <input type="text" id="az-edit-mail" class="form-control" placeholder="E-Posta">
+                            <button class="btn-add" onclick="dosyaVeMuvekkilGuncelle()"><i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet</button>
                         </div>
                         
                         <div class="info-box">
                             <h4><i class="fa-solid fa-gavel"></i> Duruşmalar & Sonuçlar</h4>
                             <div id="az-hearings-list" style="margin-bottom: 15px; max-height: 250px; overflow-y: auto;"></div>
-                            <div style="background: #FAFAFA; padding: 15px; border-radius: 6px; border: 1px solid #D1D5DB;">
+                            <div id="az-hearing-add-section" style="background: #FAFAFA; padding: 15px; border-radius: 6px; border: 1px solid #D1D5DB;">
                                 <label style="font-size:12px; font-weight:bold;">Yeni Duruşma Ekle</label>
                                 <div style="display:flex; gap:5px;">
                                     <input type="date" id="az-hearing-date" class="form-control" style="flex:1;">
@@ -372,7 +382,7 @@
                         <div class="info-box">
                             <h4><i class="fa-solid fa-folder-open"></i> Aşamalar & Evrak Arşivi</h4>
                             <div class="timeline" id="az-timeline"></div>
-                            <div style="margin-top: 15px; padding: 15px; background: var(--bg-main); border: 2px dashed #D1D5DB; border-radius: 8px;">
+                            <div id="az-evrak-add-section" style="margin-top: 15px; padding: 15px; background: var(--bg-main); border: 2px dashed #D1D5DB; border-radius: 8px;">
                                 <input type="file" id="az-evrak-input" accept=".pdf,.doc,.docx,.jpg,.png" class="form-control" style="border:none; padding:0;">
                                 <button class="btn-add" onclick="evrakYukle()"><i class="fa-solid fa-cloud-arrow-up"></i> Evrak Yükle</button>
                             </div>
@@ -386,10 +396,7 @@
                         <div class="data-panel">
                             <div style="margin-bottom:15px;"><label>Dosya No (Sistemde Kayıtlı)</label><input type="text" id="doc-dosyano" class="form-control"></div>
                             <div style="margin-bottom:15px;"><label>Dilekçe Türü</label>
-                                <select id="doc-type" class="form-control">
-                                    <option>Mazeret Dilekçesi</option><option>Süre Uzatım Talebi</option><option>Cevap Dilekçesi</option><option>İstinaf Başvuru</option><option>Temyiz</option>
-                                    <option>İhtiyati Haciz</option><option>Şikayet Dilekçesi</option>
-                                </select>
+                                <select id="doc-type" class="form-control"><option>Mazeret Dilekçesi</option><option>Süre Uzatım Talebi</option><option>Cevap Dilekçesi</option><option>İstinaf Başvuru</option><option>Temyiz</option><option>İhtiyati Haciz</option><option>Şikayet Dilekçesi</option></select>
                             </div>
                             <div style="margin-bottom:15px;"><label>Ek Detay / Yapay Zekaya Talimat</label><textarea id="doc-detay" class="form-control" rows="4" placeholder="AI'ya özel notunuz..."></textarea></div>
                             <button onclick="dilekceUret()" style="width:100%; padding:12px; background:var(--bg-dark); color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">Metni Üret</button>
@@ -413,6 +420,10 @@
                                 <select id="form-k-tur" class="form-control"><option>Bireysel</option><option>Kurumsal</option></select>
                                 <input type="text" id="form-tc" class="form-control" placeholder="TC / Vergi No" required>
                                 <input type="text" id="form-ad" class="form-control" placeholder="Ad Soyad / Unvan" required>
+                                
+                                <label style="font-size: 12px; font-weight:bold;">Doğum Tarihi (Sisteme Şifre Olarak Kaydedilir)</label>
+                                <input type="date" id="form-dogum" class="form-control" required>
+                                
                                 <input type="text" id="form-tel" class="form-control" placeholder="Telefon">
                                 <input type="email" id="form-eposta" class="form-control" placeholder="E-Posta">
                             </div>
@@ -431,22 +442,12 @@
                 <div id="page-cases-active" class="page-section"><h2 class="page-title">Aktif Dosyalar</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Karşı Taraf</th><th>Tür</th><th>Durum</th></tr></thead><tbody id="table-active-cases"></tbody></table></div></div></div>
                 <div id="page-cases-closed" class="page-section"><h2 class="page-title"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Dosya No</th><th>Müvekkil</th><th>Tür</th><th>Kapanış</th></tr></thead><tbody id="table-closed-cases"></tbody></table></div></div></div>
                 <div id="page-todo-archive" class="page-section"><h2 class="page-title"><i class="fa-solid fa-check-double"></i> Görev ve İşlem Arşivi</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Görev Detayı</th><th>Tarihler</th><th>Durum</th></tr></thead><tbody id="table-todo-archive"></tbody></table></div></div></div>
-                
                 <div id="page-audit" class="page-section">
                     <h2 class="page-title">
                         <i class="fa-solid fa-user-secret" style="color: var(--primary-orange);"></i> Sistem İşlem Arşivi (Audit Log)
-                        <button class="btn-add" style="width:auto; margin-left:auto; background:#10B981;" onclick="tabloyuExcelIndir('table-audit-logs', 'Sistem_Raporu')">
-                            <i class="fa-solid fa-file-excel"></i> Raporu Excel'e Aktar
-                        </button>
+                        <button class="btn-add" style="width:auto; margin-left:auto; background:#10B981;" onclick="tabloyuExcelIndir('table-audit-logs', 'Sistem_Raporu')"><i class="fa-solid fa-file-excel"></i> Raporu Excel'e Aktar</button>
                     </h2>
-                    <div class="data-panel">
-                        <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead>
-                                <tbody id="table-audit-logs"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Tarih & Saat</th><th>Kullanıcı / Yetki</th><th>İşlem Kategorisi</th><th>Detaylı Açıklama</th></tr></thead><tbody id="table-audit-logs"></tbody></table></div></div>
                 </div>
 
                 <div id="page-client-list" class="page-section"><h2 class="page-title">Bireysel Müvekkiller</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>TC Kimlik</th><th>Ad Soyad</th><th>Telefon</th></tr></thead><tbody id="table-clients"></tbody></table></div></div></div>
@@ -464,53 +465,45 @@
     <script>
         const API_URL = "/api"; 
 
-        // EN KRİTİK EKSİKLİK GİDERİLDİ: Tüm veri alışverişini sağlayan ana fonksiyon.
         async function authFetch(url, options = {}) {
             let token = localStorage.getItem("msa_token");
             let headers = options.headers || {};
-            if(token) headers["Authorization"] = "Bearer " + token;
+            if(token) {
+                headers["Authorization"] = "Bearer " + token;
+                headers["x-user-role"] = localStorage.getItem("msa_role");
+            }
             return fetch(url, { ...options, headers });
         }
 
-        // PROFESYONEL ÖZELLİK: Tabloları Excel'e Aktarma
         function tabloyuExcelIndir(tableId, dosyaAdi) {
-            let table = document.getElementById(tableId);
-            if (!table) return;
+            let table = document.getElementById(tableId); if (!table) return;
             let rows = Array.from(table.querySelectorAll("tr"));
-            let csv = rows.map(row => {
-                let cells = Array.from(row.querySelectorAll("th, td"));
-                return cells.map(cell => `"${cell.innerText.replace(/"/g, '""')}"`).join(",");
-            }).join("\n");
+            let csv = rows.map(row => { return Array.from(row.querySelectorAll("th, td")).map(cell => `"${cell.innerText.replace(/"/g, '""')}"`).join(","); }).join("\n");
             let blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-            let link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
+            let link = document.createElement("a"); link.href = URL.createObjectURL(blob);
             link.download = dosyaAdi + "_" + new Date().toISOString().slice(0,10) + ".csv";
-            link.click();
-            showToast("Excel dosyası başarıyla indirildi.", "success");
+            link.click(); showToast("Excel dosyası başarıyla indirildi.", "success");
         }
 
         function showToast(msg, type="success") {
-            const container = document.getElementById("toast-container");
-            const t = document.createElement("div");
+            const container = document.getElementById("toast-container"); const t = document.createElement("div");
             t.style.cssText = `background:var(--bg-dark); color:white; padding:15px; border-radius:8px; border-left:4px solid ${type==='error'?'#EF4444':'var(--primary-orange)'}; margin-bottom:10px; box-shadow:0 5px 10px rgba(0,0,0,0.2); font-size: 14px; line-height: 1.4; z-index:9999;`;
             t.innerHTML = msg; container.appendChild(t); setTimeout(() => t.remove(), 3500);
         }
 
         async function sistemGiris() {
-            const u = document.getElementById("login-username").value;
-            const p = document.getElementById("login-password").value;
+            const u = document.getElementById("login-username").value; const p = document.getElementById("login-password").value;
             if(!u || !p) return showToast("Lütfen boş alan bırakmayın.", "error");
             try {
                 const res = await fetch(`${API_URL}/login`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username: u, password: p})});
                 if(res.ok) {
                     const data = await res.json();
-                    localStorage.setItem("msa_token", data.token);
-                    localStorage.setItem("msa_role", data.role);
-                    document.getElementById("logged-user-name").innerText = data.ad_soyad;
-                    uygulamayaGec();
+                    localStorage.setItem("msa_token", data.token); localStorage.setItem("msa_role", data.role);
+                    document.getElementById("logged-user-name").innerText = data.ad_soyad; uygulamayaGec();
                 } else { showToast("Girdiğiniz bilgiler hatalı.", "error"); }
             } catch(e) { showToast("Sunucu hatası.", "error"); }
         }
+        
         async function hizliSorgula() {
             const tc = document.getElementById("inq-tc").value; const dosya = document.getElementById("inq-dosya").value;
             if(!tc || !dosya) return showToast("Lütfen TC ve Dosya Numarasını eksiksiz girin.", "error");
@@ -522,22 +515,20 @@
                 else { box.innerHTML = `<span style="color:var(--primary-orange); font-weight:bold;">Sn. ${data.ad}</span><br><br><b>Dosya Türü:</b> ${data.tur}<br><b>Karşı Taraf:</b> ${data.karsi_taraf}<br><b>Güncel Aşama:</b> <span style="color:#16A34A; font-weight:bold;">${data.durum}</span>`; }
             } catch(e) { showToast("Sorgulama başarısız.", "error"); }
         }
+
         function cikisYap() { localStorage.clear(); location.reload(); }
 
         function uygulamayaGec() {
             document.getElementById("login-overlay").style.display = "none";
             document.getElementById("app-content").style.display = "flex";
-            menuleriYukle();
-            sayfaDegistir('page-dashboard');
+            menuleriYukle(); sayfaDegistir('page-dashboard');
 
             const userRole = localStorage.getItem("msa_role");
             if(userRole === "Müvekkil") {
                 showToast("Müvekkil Portalı Moduna Geçildi", "info");
                 document.querySelectorAll('.menu-item').forEach(item => {
                     const text = item.innerText;
-                    if(text.includes("Muhasebe") || text.includes("Kayıtlar") || text.includes("Arşivler") || text.includes("AI Dilekçe")) {
-                        item.style.display = "none";
-                    }
+                    if(text.includes("Muhasebe") || text.includes("Kayıtlar") || text.includes("Arşivler") || text.includes("AI Dilekçe")) { item.style.display = "none"; }
                 });
                 document.getElementById("stats-container").style.display = "none";
                 document.getElementById("agenda-panel").style.display = "none";
@@ -555,19 +546,10 @@
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-finance'); toggleMenu(this)"><div><i class="fa-solid fa-file-invoice-dollar icon-main"></i> Kapsamlı Muhasebe</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-hearings'); toggleMenu(this)"><div><i class="fa-solid fa-gavel icon-main"></i> Duruşma Takvimi</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="toggleMenu(this)"><div><i class="fa-solid fa-scale-balanced icon-main"></i> Dosyalar & Kayıtlar</div><i class="fa-solid fa-chevron-down"></i></button>
-                    <ul class="submenu">
-                        <li><a href="#" onclick="sayfaDegistir('page-crm'); return false;"><i class="fa-solid fa-plus"></i> Yeni Kayıt</a></li>
-                        <li><a href="#" onclick="sayfaDegistir('page-cases-active'); return false;"><i class="fa-solid fa-folder-open"></i> Aktif Dosyalar</a></li>
-                        <li><a href="#" onclick="sayfaDegistir('page-client-list'); return false;"><i class="fa-solid fa-users"></i> Bireysel Müvekkiller</a></li>
-                        <li><a href="#" onclick="sayfaDegistir('page-corporate-list'); return false;"><i class="fa-solid fa-building"></i> Kurumsal Şirketler</a></li>
-                    </ul>
+                    <ul class="submenu"><li><a href="#" onclick="sayfaDegistir('page-crm'); return false;"><i class="fa-solid fa-plus"></i> Yeni Kayıt</a></li><li><a href="#" onclick="sayfaDegistir('page-cases-active'); return false;"><i class="fa-solid fa-folder-open"></i> Aktif Dosyalar</a></li><li><a href="#" onclick="sayfaDegistir('page-client-list'); return false;"><i class="fa-solid fa-users"></i> Bireysel Müvekkiller</a></li><li><a href="#" onclick="sayfaDegistir('page-corporate-list'); return false;"><i class="fa-solid fa-building"></i> Kurumsal Şirketler</a></li></ul>
                 </li>
                 <li class="menu-item"><button class="menu-btn" onclick="toggleMenu(this)"><div><i class="fa-solid fa-box-archive icon-main"></i> Arşivler</div><i class="fa-solid fa-chevron-down"></i></button>
-                    <ul class="submenu">
-                        <li><a href="#" onclick="sayfaDegistir('page-cases-closed'); return false;"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar</a></li>
-                        <li><a href="#" onclick="sayfaDegistir('page-todo-archive'); return false;"><i class="fa-solid fa-check-double"></i> Görev & İşlem Arşivi</a></li>
-                        <li><a href="#" onclick="sayfaDegistir('page-audit'); return false;"><i class="fa-solid fa-user-secret"></i> Sistem İşlem Arşivi</a></li>
-                    </ul>
+                    <ul class="submenu"><li><a href="#" onclick="sayfaDegistir('page-cases-closed'); return false;"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar</a></li><li><a href="#" onclick="sayfaDegistir('page-todo-archive'); return false;"><i class="fa-solid fa-check-double"></i> Görev & İşlem Arşivi</a></li><li><a href="#" onclick="sayfaDegistir('page-audit'); return false;"><i class="fa-solid fa-user-secret"></i> Sistem İşlem Arşivi</a></li></ul>
                 </li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-documents'); toggleMenu(this)"><div><i class="fa-solid fa-robot icon-main"></i> AI Dilekçe Üretici</div></button></li>
             `;
@@ -608,20 +590,17 @@
                 document.getElementById("st-durusma").innerText = stats.bu_hafta_durusma;
                 
                 const cases = await (await authFetch(`${API_URL}/recent-cases`)).json();
-                document.getElementById("table-recent-cases").innerHTML = cases.map(c => `
-                    <tr class="clickable-row" onclick="detayAc(${c.id})">
-                        <td class="omni-link"><i class="fa-solid fa-folder-open"></i> ${c.dosya_no}</td>
-                        <td>${c.muvekkil}</td>
-                        <td><span class="badge badge-gray">${c.tur}</span></td>
-                        <td><span class="badge badge-orange">${c.durum}</span></td>
-                    </tr>`).join("");
+                document.getElementById("table-recent-cases").innerHTML = cases.map(c => `<tr class="clickable-row" onclick="detayAc(${c.id})"><td class="omni-link"><i class="fa-solid fa-folder-open"></i> ${c.dosya_no}</td><td>${c.muvekkil}</td><td><span class="badge badge-gray">${c.tur}</span></td><td><span class="badge badge-orange">${c.durum}</span></td></tr>`).join("");
                 gorevleriGetir();
             } catch(e) { console.error(e); }
         }
+
         async function gorunurlukDegistir(tur, id) { await authFetch(`${API_URL}/${tur}/${id}/toggle-visibility`, {method:"PUT"}); detayAc(document.getElementById("az-case-id").value); }
         async function asamaEvrakSil(tur, id) { if(!confirm("Kaydı tamamen silmek istediğinize emin misiniz?")) return; await authFetch(`${API_URL}/${tur}/${id}`, {method:"DELETE"}); detayAc(document.getElementById("az-case-id").value); }
+
         async function detayAc(caseId) {
             try {
+                const isMuvekkil = localStorage.getItem("msa_role") === "Müvekkil";
                 const data = await(await authFetch(`${API_URL}/cases/${caseId}/details`)).json();
                 sayfaDegistir('page-case-detail');
 
@@ -630,24 +609,17 @@
                 document.getElementById("az-case-id").value = caseId;
                 document.getElementById("az-client-id").value = data.muvekkil.id;
 
-                document.getElementById("az-ad").innerText = data.muvekkil.ad_soyad;
-                document.getElementById("az-tc").innerText = data.muvekkil.tc;
-                document.getElementById("az-tel").innerText = data.muvekkil.telefon || "-";
-                document.getElementById("az-mail").innerText = data.muvekkil.eposta || "-";
+                document.getElementById("az-ad").innerText = data.muvekkil.ad_soyad; document.getElementById("az-tc").innerText = data.muvekkil.tc;
+                document.getElementById("az-tel").innerText = data.muvekkil.telefon || "-"; document.getElementById("az-mail").innerText = data.muvekkil.eposta || "-";
                 
                 document.getElementById("az-toplam").innerText = `${data.finans.toplam} ₺`;
                 document.getElementById("az-odenen").innerText = `${data.finans.odenen} ₺`;
                 document.getElementById("az-kalan").innerText = `${data.finans.kalan} ₺`;
 
-                document.getElementById("az-edit-karsi").value = data.karsi_taraf;
-                document.getElementById("az-edit-durum").value = data.durum;
-                document.getElementById("az-edit-ucret").value = data.anlasilan_ucret;
-                document.getElementById("az-edit-tel").value = data.muvekkil.telefon;
+                document.getElementById("az-edit-karsi").value = data.karsi_taraf; document.getElementById("az-edit-durum").value = data.durum;
+                document.getElementById("az-edit-ucret").value = data.anlasilan_ucret; document.getElementById("az-edit-tel").value = data.muvekkil.telefon;
                 document.getElementById("az-edit-mail").value = data.muvekkil.eposta;
 
-                let timeHtml = data.asamalar.map(a => `<div class="timeline-item"><b>${a.tarih}</b> - ${a.aciklama}</div>`).join("");
-                timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad} <i class="fa-solid fa-download"></i></a></div>`).join("");
-                document.getElementById("az-timeline").innerHTML = timeHtml || "Kayıt yok.";
                 if(isMuvekkil) {
                     document.getElementById("az-payment-section").style.display = "none"; document.getElementById("az-edit-section").style.display = "none";
                     document.getElementById("az-hearing-add-section").style.display = "none"; document.getElementById("az-evrak-add-section").style.display = "none";
@@ -656,60 +628,26 @@
                     document.getElementById("az-hearing-add-section").style.display = "block"; document.getElementById("az-evrak-add-section").style.display = "block";
                 }
 
-                // 👇👇👇 YENİ EKLENEN KISIM: Yetkiye göre Göz/Sil butonları gösterme ve Timeline Güncellemesi 👇👇👇
-                let timeHtml = data.asamalar.map(a => `<div class="timeline-item"><b>${a.tarih}</b> - ${a.aciklama} ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${a.gor ? '' : '-slash'}" style="color:${a.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('stages', ${a.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('stages', ${a.id})"></i></div>` : ''}</div>`).join("");
-                timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad}</a> ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${e.gor ? '' : '-slash'}" style="color:${e.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('documents', ${e.id})"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('documents', ${e.id})"></i></div>` : ''}</div>`).join("");
-                document.getElementById("az-timeline").innerHTML = timeHtml || "Kayıt yok.";
+                let timeHtml = data.asamalar.map(a => `<div class="timeline-item"><b>${a.tarih}</b> - ${a.aciklama} ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${a.gor ? '' : '-slash'}" style="color:${a.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('stages', ${a.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('stages', ${a.id})" title="Sil"></i></div>` : ''}</div>`).join("");
+                timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad} <i class="fa-solid fa-download"></i></a> ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${e.gor ? '' : '-slash'}" style="color:${e.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('documents', ${e.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('documents', ${e.id})" title="Sil"></i></div>` : ''}</div>`).join("");
+                document.getElementById("az-timeline").innerHTML = timeHtml || "<i style='font-size:13px; color:#9CA3AF;'>Kayıt yok.</i>";
 
                 let hHtml = "";
                 if(data.durusmalar && data.durusmalar.length > 0) {
-                    hHtml = data.durusmalar.map(h => `<div style="border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><b>${h.tarih} - ${h.saat}</b> ${!isMuvekkil ? `<i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="durusmaSil(${h.id})"></i>` : ''}</div><div style="font-size:13px; color:#4B5563;">${h.mahkeme}</div><div style="margin-top:5px; display:flex; gap:5px;"> ${!isMuvekkil ? `<input type="text" id="h-res-${h.id}" class="form-control" style="margin:0; padding:5px; font-size:12px;" placeholder="Sonuç / Not girin..." value="${h.sonuc}"><button class="btn-action btn-edit" style="margin:0; padding:5px 10px;" onclick="durusmaSonucKaydet(${h.id})">Kaydet</button>` : `<span style="font-size:13px; color:var(--primary-orange);">${h.sonuc || 'Sonuç girilmedi.'}</span>`}</div></div>`).join("");
+                    hHtml = data.durusmalar.map(h => `<div style="border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><b>${h.tarih} - ${h.saat}</b> ${!isMuvekkil ? `<i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="durusmaSil(${h.id})" title="Sil"></i>` : ''}</div><div style="font-size:13px; color:#4B5563;">${h.mahkeme}</div><div style="margin-top:5px; display:flex; gap:5px;"> ${!isMuvekkil ? `<input type="text" id="h-res-${h.id}" class="form-control" style="margin:0; padding:5px; font-size:12px;" placeholder="Sonuç / Not girin..." value="${h.sonuc}"><button class="btn-action btn-edit" style="margin:0; padding:5px 10px;" onclick="durusmaSonucKaydet(${h.id})">Kaydet</button>` : `<span style="font-size:13px; color:var(--primary-orange);">${h.sonuc || 'Sonuç girilmedi.'}</span>`}</div></div>`).join("");
                 } else { hHtml = "<i style='font-size:13px; color:#9CA3AF;'>Kayıtlı duruşma bulunmuyor.</i>"; }
                 document.getElementById("az-hearings-list").innerHTML = hHtml;
-                let hHtml = "";
-                if(data.durusmalar && data.durusmalar.length > 0) {
-                    hHtml = data.durusmalar.map(h => `
-                        <div style="border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b>${h.tarih} - ${h.saat}</b>
-                                <i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="durusmaSil(${h.id})"></i>
-                            </div>
-                            <div style="font-size:13px; color:#4B5563;">${h.mahkeme}</div>
-                            <div style="margin-top:5px; display:flex; gap:5px;">
-                                <input type="text" id="h-res-${h.id}" class="form-control" style="margin:0; padding:5px; font-size:12px;" placeholder="Sonuç / Not girin..." value="${h.sonuc}">
-                                <button class="btn-action btn-edit" style="margin:0; padding:5px 10px;" onclick="durusmaSonucKaydet(${h.id})">Kaydet</button>
-                            </div>
-                        </div>
-                    `).join("");
-                } else {
-                    hHtml = "<i style='font-size:13px; color:#9CA3AF;'>Kayıtlı duruşma bulunmuyor.</i>";
-                }
-                document.getElementById("az-hearings-list").innerHTML = hHtml;
-
             } catch(e) { showToast("Dosya detayı açılamadı.", "error"); }
         }
 
         async function durusmaEkle() {
-            const caseId = document.getElementById("az-case-id").value;
-            const t = document.getElementById("az-hearing-date").value;
-            const s = document.getElementById("az-hearing-time").value;
-            const m = document.getElementById("az-hearing-court").value;
+            const caseId = document.getElementById("az-case-id").value; const t = document.getElementById("az-hearing-date").value; const s = document.getElementById("az-hearing-time").value; const m = document.getElementById("az-hearing-court").value;
             if(!t || !m) return showToast("Tarih ve mahkeme alanları zorunludur.", "error");
-            await authFetch(`${API_URL}/cases/${caseId}/hearings`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({tarih: t, saat: s, mahkeme: m}) });
-            showToast("Duruşma dosyaya eklendi.", "success"); document.getElementById("az-hearing-date").value = ""; document.getElementById("az-hearing-court").value = ""; detayAc(caseId);
+            await authFetch(`${API_URL}/cases/${caseId}/hearings`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({tarih: t, saat: s, mahkeme: m}) }); showToast("Duruşma eklendi.", "success"); document.getElementById("az-hearing-date").value = ""; document.getElementById("az-hearing-court").value = ""; detayAc(caseId);
         }
 
-        async function durusmaSil(id) {
-            if(!confirm("Bu duruşmayı silmek istediğinize emin misiniz?")) return;
-            const caseId = document.getElementById("az-case-id").value;
-            await authFetch(`${API_URL}/hearings/${id}`, { method: "DELETE" }); showToast("Duruşma silindi.", "success"); detayAc(caseId);
-        }
-
-        async function durusmaSonucKaydet(id) {
-            const caseId = document.getElementById("az-case-id").value; const res = document.getElementById(`h-res-${id}`).value;
-            await authFetch(`${API_URL}/hearings/${id}/result`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({sonuc: res}) });
-            showToast("Duruşma sonucu başarıyla güncellendi.", "success"); detayAc(caseId);
-        }
+        async function durusmaSil(id) { if(!confirm("Bu duruşmayı silmek istediğinize emin misiniz?")) return; const caseId = document.getElementById("az-case-id").value; await authFetch(`${API_URL}/hearings/${id}`, { method: "DELETE" }); showToast("Duruşma silindi.", "success"); detayAc(caseId); }
+        async function durusmaSonucKaydet(id) { const caseId = document.getElementById("az-case-id").value; const res = document.getElementById(`h-res-${id}`).value; await authFetch(`${API_URL}/hearings/${id}/result`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({sonuc: res}) }); showToast("Sonuç güncellendi.", "success"); detayAc(caseId); }
 
         async function dosyaVeMuvekkilGuncelle() {
             const caseId = document.getElementById("az-case-id").value;
@@ -719,38 +657,27 @@
 
         async function tahsilatEkle() {
             const clientId = document.getElementById("az-client-id").value; const caseId = document.getElementById("az-case-id").value;
-            const miktar = parseFloat(document.getElementById("az-payment-amount").value);
-            const yontem = document.getElementById("az-payment-method").value;
-            const aciklama = document.getElementById("az-payment-desc").value;
+            const miktar = parseFloat(document.getElementById("az-payment-amount").value); const yontem = document.getElementById("az-payment-method").value; const aciklama = document.getElementById("az-payment-desc").value;
             if(!miktar || miktar <= 0) return showToast("Geçerli bir tutar girin.", "error");
             await authFetch(`${API_URL}/clients/${clientId}/payments`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({miktar: miktar, odeme_yontemi: yontem, aciklama: aciklama, makbuz_no: ""})});
-            showToast(`Tahsilat ${yontem} hesabına işlendi.`, "success");
-            document.getElementById("az-payment-amount").value = ""; document.getElementById("az-payment-desc").value = "";
-            detayAc(caseId);
+            showToast(`Tahsilat işlendi.`, "success"); document.getElementById("az-payment-amount").value = ""; document.getElementById("az-payment-desc").value = ""; detayAc(caseId);
         }
 
         async function evrakYukle() {
             const caseId = document.getElementById("az-case-id").value; const fileInput = document.getElementById("az-evrak-input");
             if(fileInput.files.length === 0) return showToast("Dosya seçin.", "error");
             const formData = new FormData(); formData.append("file", fileInput.files[0]);
-            showToast("Yükleniyor...", "info");
-            await authFetch(`${API_URL}/cases/${caseId}/upload`, { method: "POST", body: formData });
-            showToast("Evrak eklendi!", "success"); fileInput.value = ""; detayAc(caseId);
+            showToast("Yükleniyor...", "info"); await authFetch(`${API_URL}/cases/${caseId}/upload`, { method: "POST", body: formData }); showToast("Evrak eklendi!", "success"); fileInput.value = ""; detayAc(caseId);
         }
 
         let dChart, bChart;
         async function finansVerileriniGetir() {
             try {
                 const data = await(await authFetch(`${API_URL}/finance`)).json();
-                
-                document.getElementById("fin-kasa").innerText = `${data.kasa_bakiye.toLocaleString("tr-TR")} ₺`;
-                document.getElementById("fin-banka").innerText = `${data.banka_bakiye.toLocaleString("tr-TR")} ₺`;
-                document.getElementById("fin-gider").innerText = `${data.ozet.aylik_gider.toLocaleString("tr-TR")} ₺`;
-
+                document.getElementById("fin-kasa").innerText = `${data.kasa_bakiye.toLocaleString("tr-TR")} ₺`; document.getElementById("fin-banka").innerText = `${data.banka_bakiye.toLocaleString("tr-TR")} ₺`; document.getElementById("fin-gider").innerText = `${data.ozet.aylik_gider.toLocaleString("tr-TR")} ₺`;
                 document.getElementById("table-finance-clients").innerHTML = data.liste.map(f => `<tr><td><b>${f.muvekkil}</b></td><td>${f.toplam} ₺</td><td style="color:#16A34A;">${f.odenen} ₺</td><td style="color:#EF4444;">${f.kalan} ₺</td></tr>`).join("");
                 document.getElementById("table-income").innerHTML = data.tahsilat_listesi.map(t => `<tr><td>${t.tarih}</td><td>${t.muvekkil}<br><small>${t.aciklama}</small></td><td style="color:#16A34A; font-weight:bold;">${t.miktar} ₺</td><td><span class="badge ${t.yontem==='Banka'?'badge-orange':'badge-gray'}">${t.yontem}</span></td></tr>`).join("");
                 document.getElementById("table-expenses").innerHTML = data.gider_listesi.map(g => `<tr><td>${g.tarih}</td><td><b>${g.kalem}</b></td><td>${g.kategori}</td><td>${g.fatura_no || '-'}</td><td>%${g.kdv_orani}</td><td><span class="badge ${g.odeme_yontemi==='Banka'?'badge-orange':'badge-gray'}">${g.odeme_yontemi}</span></td><td style="color:#EF4444;">${g.tutar} ₺</td><td><button class="btn-action btn-delete" onclick="giderSil(${g.id})">Sil</button></td></tr>`).join("");
-
                 if(dChart) dChart.destroy(); if(bChart) bChart.destroy();
                 dChart = new Chart(document.getElementById('financeDoughnut'), { type:'doughnut', data:{labels:['Bu Ayki Gelir','Bu Ayki Gider'],datasets:[{data:[data.ozet.aylik_gelir, data.ozet.aylik_gider], backgroundColor:['#16A34A', '#EF4444'], borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false} });
                 bChart = new Chart(document.getElementById('financeBar'), { type:'bar', data:{labels:['Bu Ayın Net Bilançosu'],datasets:[{label:'Tahsilat (Gelir)', data:[data.ozet.aylik_gelir], backgroundColor:'#16A34A'}, {label:'Ofis Giderleri', data:[data.ozet.aylik_gider], backgroundColor:'#EF4444'}]}, options:{responsive:true, maintainAspectRatio:false} });
@@ -758,52 +685,48 @@
         }
 
         async function yeniGiderEkle() {
-            const data = {
-                kalem: document.getElementById("exp-kalem").value,
-                kategori: document.getElementById("exp-kategori").value,
-                odeme_yontemi: document.getElementById("exp-yontem").value,
-                kdv_orani: parseInt(document.getElementById("exp-kdv").value) || 0,
-                fatura_no: document.getElementById("exp-faturano").value,
-                tutar: parseFloat(document.getElementById("exp-tutar").value)
-            };
+            const data = { kalem: document.getElementById("exp-kalem").value, kategori: document.getElementById("exp-kategori").value, odeme_yontemi: document.getElementById("exp-yontem").value, kdv_orani: parseInt(document.getElementById("exp-kdv").value) || 0, fatura_no: document.getElementById("exp-faturano").value, tutar: parseFloat(document.getElementById("exp-tutar").value) };
             if(!data.kalem || !data.tutar) return showToast("Açıklama ve tutar zorunludur.", "error");
-            
             await authFetch(`${API_URL}/expenses`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
-            showToast("Gider muhasebeye işlendi.", "success");
-            
-            document.getElementById("exp-kalem").value = "";
-            document.getElementById("exp-faturano").value = "";
-            document.getElementById("exp-tutar").value = "";
-
-            finansVerileriniGetir();
+            showToast("Gider işlendi.", "success"); document.getElementById("exp-kalem").value = ""; document.getElementById("exp-faturano").value = ""; document.getElementById("exp-tutar").value = ""; finansVerileriniGetir();
         }
 
         async function giderSil(id) { if(confirm("Gider kaydını silmek istediğinize emin misiniz?")) { await authFetch(`${API_URL}/expenses/${id}`, { method:"DELETE" }); showToast("Gider silindi.", "success"); finansVerileriniGetir(); } }
-
         async function durusmalariGetir() { try { const data = await(await authFetch(`${API_URL}/hearings`)).json(); document.getElementById("table-hearings").innerHTML = data.map(h => `<tr class="clickable-row" onclick="detayAc(${h.case_id})"><td><b>${h.tarih}</b></td><td>${h.saat}</td><td>${h.mahkeme}</td><td class="omni-link">${h.dosya_no}</td><td>${h.muvekkil}</td><td><span style="font-size:12px; color:#6B7280;">${h.sonuc || '-'}</span></td></tr>`).join(""); } catch(e) {} }
-
         async function tumDosyalariGetir() { try{const d=await(await authFetch(`${API_URL}/all-cases`)).json(); document.getElementById("table-active-cases").innerHTML=d.map(c=>`<tr class="clickable-row" onclick="detayAc(${c.id})"><td class="omni-link">${c.dosya_no}</td><td>${c.muvekkil}</td><td>${c.karsi_taraf}</td><td><span class="badge badge-gray">${c.tur}</span></td><td><span class="badge badge-green">${c.durum}</span></td></tr>`).join("");}catch(e){} }
         async function kapanmisDosyalariGetir() { try{const d=await(await authFetch(`${API_URL}/closed-cases`)).json(); document.getElementById("table-closed-cases").innerHTML=d.map(c=>`<tr class="clickable-row" onclick="detayAc(${c.id})"><td class="omni-link">${c.dosya_no}</td><td>${c.muvekkil}</td><td><span class="badge badge-gray">${c.tur}</span></td><td>${c.kapanis}</td><td><span class="badge badge-red">KAPALI</span></td></tr>`).join("");}catch(e){} }
         async function muvekkilleriGetir() { try{const d=await(await authFetch(`${API_URL}/clients`)).json(); document.getElementById("table-clients").innerHTML=d.map(c=>`<tr><td>${c.tc_kimlik}</td><td>${c.ad_soyad}</td><td>${c.telefon}</td><td>${c.eposta}</td></tr>`).join("");}catch(e){} }
         async function kurumsalGetir() { try{const d=await(await authFetch(`${API_URL}/corporate-clients`)).json(); document.getElementById("table-corporate-clients").innerHTML=d.map(c=>`<tr><td>${c.vergi_no}</td><td>${c.unvan}</td><td>${c.telefon}</td><td>${c.eposta}</td></tr>`).join("");}catch(e){} }
         
-        async function yeniKayitOlustur(e) { e.preventDefault(); const data = { tc_kimlik: document.getElementById("form-tc").value, ad_soyad: document.getElementById("form-ad").value, telefon: document.getElementById("form-tel").value, eposta: document.getElementById("form-eposta").value, dosya_no: document.getElementById("form-dosyano").value, karsi_taraf: document.getElementById("form-karsi").value, tur: document.getElementById("form-tur").value, anlasilan_ucret: parseFloat(document.getElementById("form-ucret").value) || 0 }; await authFetch(`${API_URL}/add-client-case`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) }); showToast("Kayıt oluşturuldu", "success"); sayfaDegistir('page-cases-active'); }
-        async function gorevleriGetir() { const t = await(await authFetch(`${API_URL}/todos`)).json(); document.getElementById("todo-list-container").innerHTML = t.map(x => `<li style="padding:15px; background:#F9FAFB; margin-bottom:8px; border-radius:8px; border-left:4px solid var(--primary-orange);"><b>${x.task}</b> <br><span style="font-size:12px; color:#6B7280;">${x.detay}</span> <i class="fa-solid fa-check" style="float:right; color:#16A34A; cursor:pointer;" onclick="gorevTamamla(${x.id})"></i></li>`).join(""); }
+        async function yeniKayitOlustur(e) {
+            e.preventDefault(); 
+            const dInput = document.getElementById("form-dogum").value; 
+            const formattedDate = dInput.split("-").reverse().join("."); 
+            const data = { tc_kimlik: document.getElementById("form-tc").value, ad_soyad: document.getElementById("form-ad").value, telefon: document.getElementById("form-tel").value, eposta: document.getElementById("form-eposta").value, dosya_no: document.getElementById("form-dosyano").value, karsi_taraf: document.getElementById("form-karsi").value, tur: document.getElementById("form-tur").value, anlasilan_ucret: parseFloat(document.getElementById("form-ucret").value) || 0, dogum_tarihi: formattedDate };
+            await authFetch(`${API_URL}/add-client-case`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) }); showToast("Kayıt oluşturuldu. Müvekkil şifresi: " + formattedDate, "success"); sayfaDegistir('page-cases-active'); 
+        }
+
+        async function gorevleriGetir() { 
+            const t = await(await authFetch(`${API_URL}/todos`)).json(); 
+            document.getElementById("todo-list-container").innerHTML = t.map(x => `
+                <li style="padding:15px; background:#F9FAFB; margin-bottom:8px; border-radius:8px; border-left:4px solid var(--primary-orange); display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <input type="checkbox" style="transform: scale(1.4); cursor:pointer;" onclick="gorevTamamla(${x.id}, this)" title="Tamamlandı İşaretle">
+                        <div><b class="task-title">${x.task}</b> <br><span style="font-size:12px; color:#6B7280;">${x.detay}</span></div>
+                    </div>
+                    <i class="fa-solid fa-trash" style="color:red; cursor:pointer; padding:5px;" onclick="gorevSil(${x.id})" title="Sil"></i>
+                </li>`).join(""); 
+        }
+
         async function yeniGorevEkle() { const i = document.getElementById('new-task-input'); await authFetch(`${API_URL}/todos`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({task: i.value, detay: document.getElementById('new-task-detay').value}) }); showToast("Eklendi", "success"); document.getElementById('new-task-input').value = ""; document.getElementById('new-task-detay').value = ""; sayfaVerileriniYukle(); }
-        async function gorevTamamla(id) { await authFetch(`${API_URL}/todos/${id}/toggle`, {method:"PUT"}); sayfaVerileriniYukle(); }
+        async function gorevTamamla(id, box) { box.disabled = true; box.nextElementSibling.querySelector('.task-title').style.textDecoration = 'line-through'; box.nextElementSibling.style.opacity = '0.5'; await authFetch(`${API_URL}/todos/${id}/toggle`, {method:"PUT"}); showToast("Görev arşivlendi.", "success"); setTimeout(sayfaVerileriniYukle, 1000); }
+        async function gorevSil(id) { if(!confirm("Görevi tamamen silmek istiyor musunuz?")) return; await authFetch(`${API_URL}/todos/${id}`, {method:"DELETE"}); sayfaVerileriniYukle(); }
+        
         async function ajandaArsiviniGetir() { try { const data = await(await authFetch(`${API_URL}/todos/archive`)).json(); document.getElementById("table-todo-archive").innerHTML = data.map(t => { let bClass = t.status === "Tamamlandı" ? "badge-green" : "badge-red"; return `<tr><td style="text-decoration:line-through; color:#6B7280;"><b>${t.task}</b><br><span style="font-size:11px;">${t.detay}</span></td><td><span style="font-size:12px">Eklenme: ${t.eklenme}<br>Kapanış: ${t.bitis}</span></td><td><span class="badge ${bClass}">${t.status}</span></td></tr>`; }).join(""); } catch(e) {} }
 
         async function sendChatMessage() { const input = document.getElementById('chat-input'); const msg = input.value.trim(); if (!msg) return; const chatBox = document.getElementById('chat-messages'); chatBox.innerHTML += `<div class="msg msg-user">${msg}</div>`; input.value = ''; chatBox.scrollTop = chatBox.scrollHeight; try { const res = await authFetch(`${API_URL}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({message: msg}) }); const data = await res.json(); chatBox.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`; chatBox.scrollTop = chatBox.scrollHeight; } catch (e) {} }
         async function dilekceUret() { const d = document.getElementById("doc-dosyano").value; const t = document.getElementById("doc-type").value; const det = document.getElementById("doc-detay").value; if(!d) return showToast("Dosya numarası girin.", "error"); showToast("Metin hazırlanıyor...", "info"); try { const r = await authFetch(`${API_URL}/generate-petition`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({dosya_no: d, dilekce_turu: t, detay: det}) }); document.getElementById("petition-output").value = (await r.json()).dilekce_metni; } catch(e) {} }
-        
-        function indirWord() {
-            const content = document.getElementById('petition-output').value; if(!content) return showToast("Dilekçe üretilmedi.", "error");
-            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Dilekçe</title></head><body>";
-            const footer = "</body></html>"; const sourceHTML = header + "<div style='font-family: Times New Roman; font-size: 12pt; text-align:justify;'>" + content.replace(/\n/g, '<br>') + "</div>" + footer;
-            const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' }); const url = URL.createObjectURL(blob);
-            const a = document.createElement("a"); a.href = url; a.download = 'MSA_Hukuk_Dilekce.doc'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            showToast("Word belgesi hatasız olarak indirildi.", "success");
-        }
+        function indirWord() { const content = document.getElementById('petition-output').value; if(!content) return showToast("Dilekçe üretilmedi.", "error"); const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Dilekçe</title></head><body>"; const footer = "</body></html>"; const sourceHTML = header + "<div style='font-family: Times New Roman; font-size: 12pt; text-align:justify;'>" + content.replace(/\n/g, '<br>') + "</div>" + footer; const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = 'MSA_Hukuk_Dilekce.doc'; document.body.appendChild(a); a.click(); document.body.removeChild(a); showToast("Word belgesi hatasız olarak indirildi.", "success"); }
         
         let aramaTimer; async function canliAra(val) { const box = document.getElementById("live-search-results"); clearTimeout(aramaTimer); if(val.length < 3) { box.style.display = "none"; return; } aramaTimer = setTimeout(async () => { try { const res = await authFetch(`${API_URL}/search-client?query=${val}`); const data = await res.json(); if(data.hata) { box.innerHTML = `<div class="ls-item" style="color:red;">${data.hata}</div>`; } else { box.innerHTML = data.map(d => `<div class="ls-item" onclick="detayAc(${d.id}); document.getElementById('live-search-results').style.display='none';"><b>${d.dosya_no}</b> - ${d.muvekkil} <span style="float:right; color:#9CA3AF;">${d.tur}</span></div>`).join(""); } box.style.display = "block"; } catch(e){} }, 300); }
         async function uyapSenkronizasyon() { const btn = document.getElementById("btn-uyap-sync"); btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Çalışıyor...`; try { const res = await authFetch(`${API_URL}/uyap-sync`, {method:"POST"}); const data = await res.json(); showToast(data.mesaj, "success"); } catch(e) { showToast("Sisteminiz UYAP verilerini çekti.", "success"); } btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> UYAP`; }
