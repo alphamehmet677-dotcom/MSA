@@ -8,3 +8,5 @@ pytesseract
 Pillow
 python-multipart
 bcrypt
+qrcode
+apscheduler
