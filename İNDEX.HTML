@@ -153,16 +153,18 @@
     <div id="toast-container" style="position: fixed; top: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; gap: 15px;"></div>
 
     <div id="login-overlay">
+        <!-- STANDART GİRİŞ PANELİ -->
         <div class="login-box" id="login-form-box">
             <i class="fa-solid fa-scale-balanced"></i>
             <h2>MSA Hukuk & Danışmanlık</h2>
             <p style="margin-bottom: 10px;">Lütfen sisteme giriş yapınız.</p>
             <input type="text" id="login-username" placeholder="Kullanıcı Adı / T.C. Kimlik No">
-            <input type="password" id="login-password" placeholder="Şifre (Müvekkiller: Doğum Tarihi GG.AA.YYYY)" onkeypress="if(event.key==='Enter') sistemGiris()">
+            <input type="password" id="login-password" placeholder="Şifre" onkeypress="if(event.key==='Enter') sistemGiris()">
             <button onclick="sistemGiris()">Sisteme Giriş Yap</button>
             <button style="background:transparent; color:var(--primary-orange); border:2px solid var(--primary-orange); margin-top:15px;" onclick="document.getElementById('login-form-box').style.display='none'; document.getElementById('inquiry-form-box').style.display='block';">Müvekkil Hızlı Dosya Sorgulama</button>
         </div>
 
+        <!-- MÜVEKKİL SORGULAMA PANELİ -->
         <div class="login-box" id="inquiry-form-box" style="display:none;">
             <i class="fa-solid fa-magnifying-glass"></i>
             <h2>Dosya Durumu Sorgulama</h2>
@@ -300,10 +302,7 @@
                     </div>
 
                     <div class="data-panel" style="margin-top:20px;">
-                        <h2>
-                            Ofis Giderleri & Fatura Girişi 
-                            <button class="btn-action btn-edit" style="float: right;" onclick="tabloyuExcelIndir('table-expenses', 'Gider_Raporu')">Excel Çıktısı Al</button>
-                        </h2>
+                        <h2>Ofis Giderleri & Fatura Girişi <button class="btn-action btn-edit" style="float: right;" onclick="tabloyuExcelIndir('table-expenses', 'Gider_Raporu')">Excel Çıktısı Al</button></h2>
                         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
                             <input type="text" id="exp-kalem" class="form-control" placeholder="Açıklama / Kurum" style="flex:1; min-width:200px;">
                             <select id="exp-kategori" class="form-control" style="flex:1; min-width:150px;"><option>Kira</option><option>Fatura</option><option>Kırtasiye</option><option>Vergi/Harç</option><option>Diğer</option></select>
@@ -319,10 +318,7 @@
 
                 <div id="page-case-detail" class="page-section">
                     <div class="detail-header">
-                        <div>
-                            <h2 id="az-title" style="margin-bottom: 5px;">Dosya Yükleniyor...</h2>
-                            <span class="badge badge-orange" id="az-tur"></span>
-                        </div>
+                        <div><h2 id="az-title" style="margin-bottom: 5px;">Dosya Yükleniyor...</h2><span class="badge badge-orange" id="az-tur"></span></div>
                         <button class="btn-action" style="background:#4B5563;" onclick="sayfaDegistir('page-dashboard')"><i class="fa-solid fa-arrow-left"></i> Panoya Dön</button>
                     </div>
 
@@ -375,7 +371,7 @@
                                     <input type="time" id="az-hearing-time" class="form-control" style="width:80px;" value="10:00">
                                 </div>
                                 <input type="text" id="az-hearing-court" class="form-control" placeholder="Mahkeme (Örn: Ankara 1. Asliye)">
-                                <button class="btn-add" onclick="durusmaEkle()"><i class="fa-solid fa-plus"></i> Duruşmayı Kaydet</button>
+                                <button class="btn-add" onclick="duruşmaEkle()"><i class="fa-solid fa-plus"></i> Duruşmayı Kaydet</button>
                             </div>
                         </div>
 
@@ -629,7 +625,7 @@
                 }
 
                 let timeHtml = data.asamalar.map(a => `<div class="timeline-item"><b>${a.tarih}</b> - ${a.aciklama} ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${a.gor ? '' : '-slash'}" style="color:${a.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('stages', ${a.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('stages', ${a.id})" title="Sil"></i></div>` : ''}</div>`).join("");
-                timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad} <i class="fa-solid fa-download"></i></a> ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${e.gor ? '' : '-slash'}" style="color:${e.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('documents', ${e.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('documents', ${e.id})" title="Sil"></i></div>` : ''}</div>`).join("");
+                timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad}</a> ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${e.gor ? '' : '-slash'}" style="color:${e.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('documents', ${e.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('documents', ${e.id})" title="Sil"></i></div>` : ''}</div>`).join("");
                 document.getElementById("az-timeline").innerHTML = timeHtml || "<i style='font-size:13px; color:#9CA3AF;'>Kayıt yok.</i>";
 
                 let hHtml = "";
