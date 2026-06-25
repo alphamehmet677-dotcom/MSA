@@ -18,7 +18,6 @@ class CaseType(enum.Enum):
     MIRAS = "Miras Hukuku"
     GAYRIMENKUL = "Gayrimenkul Hukuku"
 
-# YENİ: Güvenlik ve Giriş Sistemi
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -73,7 +72,7 @@ class Document(Base):
     evrak_adi = Column(String)
     yuklenme_tarihi = Column(DateTime, default=datetime.utcnow)
     dosya_yolu = Column(String, nullable=True)
-    ocr_text = Column(Text, nullable=True) # YENİ: Resimden okunan yazılar buraya kaydedilir
+    ocr_text = Column(Text, nullable=True) 
     case_id = Column(Integer, ForeignKey("case_files.id"))
     case_file = relationship("CaseFile", back_populates="documents")
 
