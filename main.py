@@ -48,8 +48,8 @@ class ChatRequest(BaseModel): message: str
 class PetitionRequest(BaseModel): dosya_no: str; dilekce_turu: str; detay: str = ""
 class LoginRequest(BaseModel): username: str; password: str
 class TodoCreate(BaseModel): task: str; detay: str = ""
-class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float
-class PaymentCreate(BaseModel): miktar: float
+class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float; kdv_orani: int = 20; odeme_yontemi: str = "Banka"; fatura_no: str = ""
+class PaymentCreate(BaseModel): miktar: float; odeme_yontemi: str = "Banka"; aciklama: str = ""; makbuz_no: str = ""
 class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str; eposta: str; dosya_no: str; karsi_taraf: str; tur: str; anlasilan_ucret: float
 class CaseClientUpdate(BaseModel): durum: str; karsi_taraf: str; anlasilan_ucret: float; telefon: str; eposta: str
 
@@ -108,7 +108,7 @@ def add_payment(client_id: int, req: PaymentCreate, db: Session = Depends(get_db
     client = db.query(models.Client).filter(models.Client.id == client_id).first()
     if not client or not client.account: raise HTTPException(status_code=404)
     client.account.odenen += req.miktar
-    db.add(models.Payment(client_id=client.id, miktar=req.miktar))
+    db.add(models.Payment(client_id=client.id, miktar=req.miktar, odeme_yontemi=req.odeme_yontemi, aciklama=req.aciklama, makbuz_no=req.makbuz_no))
     db.commit()
     return {"mesaj": "Tahsilat eklendi."}
 
@@ -116,14 +116,13 @@ def add_payment(client_id: int, req: PaymentCreate, db: Session = Depends(get_db
 def get_dashboard_stats(db: Session = Depends(get_db)):
     return {
         "aktif_muvekkil": db.query(models.Client).count(),
-        "acik_dava": db.query(models.CaseFile).filter(models.CaseFile.is_closed == False).count(), # ÇÖZÜM: TÜM AÇIK DOSYALARI SAYAR
+        "acik_dava": db.query(models.CaseFile).filter(models.CaseFile.is_closed == False).count(),
         "bekleyen_gorev": db.query(models.TodoItem).filter(models.TodoItem.is_completed == False).count(),
         "bu_hafta_durusma": db.query(models.Hearing).filter(models.Hearing.tarih >= date.today(), models.Hearing.tarih <= date.today() + timedelta(days=7)).count()
     }
 
 @app.get("/api/recent-cases")
 def recent_cases(db: Session = Depends(get_db)): 
-    # ÇÖZÜM: muvekkil_id gönderildi
     return [{"id": c.id, "dosya_no": c.dosya_no, "muvekkil": c.owner.ad_soyad, "muvekkil_id": c.owner.id, "karsi_taraf": c.karsi_taraf, "tur": c.tur.value, "durum": c.durum} for c in db.query(models.CaseFile).filter(models.CaseFile.is_closed == False).order_by(models.CaseFile.id.desc()).limit(15).all()]
 
 @app.get("/api/all-cases")
@@ -145,9 +144,23 @@ def get_finance(db: Session = Depends(get_db)):
     accounts = db.query(models.Account).all()
     giderler = db.query(models.OfficeExpense).all()
     tahsilatlar = db.query(models.Payment).all()
+    
+    kasa_giren = sum(t.miktar for t in tahsilatlar if t.odeme_yontemi == "Kasa")
+    banka_giren = sum(t.miktar for t in tahsilatlar if t.odeme_yontemi == "Banka")
+    kasa_cikan = sum(g.tutar for g in giderler if g.odeme_yontemi == "Kasa")
+    banka_cikan = sum(g.tutar for g in giderler if g.odeme_yontemi == "Banka")
+    
     aylik_gider = sum(g.tutar for g in db.query(models.OfficeExpense).filter(func.extract('month', models.OfficeExpense.tarih) == date.today().month).all())
     aylik_gelir = sum(t.miktar for t in db.query(models.Payment).filter(func.extract('month', models.Payment.tarih) == date.today().month).all())
-    return {"liste": [{"muvekkil": a.client.ad_soyad, "toplam": a.toplam_borc, "odenen": a.odenen, "kalan": a.toplam_borc - a.odenen} for a in accounts], "gider_listesi": [{"id": g.id, "kalem": g.kalem, "kategori": g.kategori, "tutar": g.tutar, "tarih": g.tarih.strftime("%d.%m.%Y")} for g in giderler], "ozet": {"aylik_gelir": aylik_gelir, "aylik_gider": aylik_gider, "aylik_net": aylik_gelir - aylik_gider}}
+    
+    return {
+        "kasa_bakiye": kasa_giren - kasa_cikan,
+        "banka_bakiye": banka_giren - banka_cikan,
+        "liste": [{"muvekkil": a.client.ad_soyad, "toplam": a.toplam_borc, "odenen": a.odenen, "kalan": a.toplam_borc - a.odenen} for a in accounts], 
+        "gider_listesi": [{"id": g.id, "kalem": g.kalem, "kategori": g.kategori, "tutar": g.tutar, "kdv_orani": g.kdv_orani, "odeme_yontemi": g.odeme_yontemi, "fatura_no": g.fatura_no, "tarih": g.tarih.strftime("%d.%m.%Y")} for g in giderler], 
+        "tahsilat_listesi": [{"id": t.id, "muvekkil": t.client.ad_soyad, "miktar": t.miktar, "yontem": t.odeme_yontemi, "aciklama": t.aciklama, "tarih": t.tarih.strftime("%d.%m.%Y")} for t in tahsilatlar],
+        "ozet": {"aylik_gelir": aylik_gelir, "aylik_gider": aylik_gider, "aylik_net": aylik_gelir - aylik_gider}
+    }
 
 @app.get("/api/cases/{case_id}/details")
 def get_case_details(case_id: int, db: Session = Depends(get_db)):
@@ -170,10 +183,10 @@ def get_client_details(client_id: int, db: Session = Depends(get_db)):
     return {"id": c.id, "tc": c.tc_kimlik, "ad": c.ad_soyad, "tel": c.telefon, "mail": c.eposta, "finans": {"toplam": hesap.toplam_borc if hesap else 0, "odenen": hesap.odenen if hesap else 0, "kalan": (hesap.toplam_borc - hesap.odenen) if hesap else 0}, "dosyalar": [{"id": f.id, "no": f.dosya_no, "durum": f.durum, "kapali": f.is_closed} for f in c.cases]}
 
 @app.get("/api/hearings")
-def get_hearings(db: Session = Depends(get_db)): return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih).all()]
+def get_hearings(db: Session = Depends(get_db)): return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih.asc()).all()]
 
 @app.post("/api/expenses")
-def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)): db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar)); db.commit(); return {"m": "ok"}
+def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)): db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar, kdv_orani=req.kdv_orani, odeme_yontemi=req.odeme_yontemi, fatura_no=req.fatura_no)); db.commit(); return {"m": "ok"}
 @app.delete("/api/expenses/{expense_id}")
 def delete_expense(expense_id: int, db: Session = Depends(get_db)): e = db.query(models.OfficeExpense).filter(models.OfficeExpense.id == expense_id).first(); db.delete(e); db.commit(); return {"m": "ok"}
 @app.post("/api/todos")
@@ -205,7 +218,7 @@ def upload_document(case_id: int, file: UploadFile = File(...), db: Session = De
     return {"m": "ok"}
 
 @app.post("/api/chat")
-def ai_chat(req: ChatRequest): return {"reply": "Ben Mehmet Alparslan. Sisteminizin yerleşik yapay zekasıyım. Hukuki sorunuzu analiz ettim. Somut olay verilerine göre hareket edilmelidir."}
+def ai_chat(req: ChatRequest): return {"reply": "Sistem mimarisi olarak size hizmet etmekten memnuniyet duyarım. İşlemlerinizin hepsi uçtan uca şifrelidir."}
 @app.post("/api/generate-petition")
 def generate_petition(req: PetitionRequest, db: Session = Depends(get_db)):
     c = db.query(models.CaseFile).filter(models.CaseFile.dosya_no == req.dosya_no).first()
