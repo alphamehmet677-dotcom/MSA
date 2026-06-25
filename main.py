@@ -13,12 +13,21 @@ from pydantic import BaseModel
 from database import SessionLocal, engine
 from datetime import date, timedelta, datetime
 import models
-from typing import Optional
 
 SECRET_KEY = "merve_safa_alparslan_erp_secret"
 
+# YENİ: RENDER İÇİN OTOMATİK VERİTABANI KURULUMU (SİSTEM ÇÖKMESİNİ EKLER)
+models.Base.metadata.create_all(bind=engine)
+
+# YENİ: YÖNETİCİ HESABI YOKSA OTOMATİK OLUŞTUR (Giriş sorunu yaşanmaması için)
+db_init = SessionLocal()
+if not db_init.query(models.User).filter(models.User.username == "merve").first():
+    db_init.add(models.User(username="merve", password_hash="merve2026", ad_soyad="Av. Merve Safa Alparslan", role="Kurucu"))
+    db_init.commit()
+db_init.close()
+
 os.makedirs("uploads", exist_ok=True)
-app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="6.5.0")
+app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="7.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -38,61 +47,47 @@ class LoginRequest(BaseModel): username: str; password: str
 class TodoCreate(BaseModel): task: str; detay: str = ""
 class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str = ""; dosya_no: str; karsi_taraf: str; tur: str
 class CaseUpdate(BaseModel): durum: str; karsi_taraf: str
-class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float
+class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float # Gider Modeli
 
 # --- GİRİŞ / ÇİFT ROL YETKİLENDİRME (AVUKAT & MÜVEKKİL) ---
 @app.post("/api/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == req.username).first()
     if user and user.password_hash == req.password:
-        token = jwt.encode({"sub": user.username, "role": "Avukat", "ad": user.ad_soyad}, SECRET_KEY, algorithm="HS256")
-        return {"token": token, "role": "Avukat", "ad_soyad": user.ad_soyad}
+        return {"token": jwt.encode({"sub": user.username, "role": "Avukat", "ad": user.ad_soyad}, SECRET_KEY, algorithm="HS256"), "role": "Avukat", "ad_soyad": user.ad_soyad}
     
     client = db.query(models.Client).filter(models.Client.tc_kimlik == req.username).first()
     if client and client.password == req.password:
-        token = jwt.encode({"sub": client.tc_kimlik, "role": "Müvekkil", "ad": client.ad_soyad, "id": client.id}, SECRET_KEY, algorithm="HS256")
-        return {"token": token, "role": "Müvekkil", "ad_soyad": client.ad_soyad, "client_id": client.id}
+        return {"token": jwt.encode({"sub": client.tc_kimlik, "role": "Müvekkil", "ad": client.ad_soyad, "id": client.id}, SECRET_KEY, algorithm="HS256"), "role": "Müvekkil", "ad_soyad": client.ad_soyad, "client_id": client.id}
         
-    raise HTTPException(status_code=401, detail="Hatalı T.C. Kimlik No veya Şifre.")
+    raise HTTPException(status_code=401, detail="Hatalı Kimlik.")
 
 # --- MÜVEKKİL PORTALI VERİ ÇEKME ---
 @app.get("/api/client-portal/{client_id}/dashboard")
 def get_client_portal_data(client_id: int, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.id == client_id).first()
-    if not client: raise HTTPException(status_code=404, detail="Müvekkil bulunamadı.")
-    
+    if not client: raise HTTPException(status_code=404)
     hesap = client.account
-    dosyalar_listesi = []
-    for c in client.cases:
-        dosyalar_listesi.append({
-            "id": c.id, "dosya_no": c.dosya_no, "tur": c.tur.value, "durum": c.durum, "karsi_taraf": c.karsi_taraf,
-            "asamalar": [{"tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama} for s in c.stages],
-            "evraklar": [{"ad": d.evrak_adi, "yol": d.dosya_yolu} for d in c.documents]
-        })
-        
     return {
         "profil": {"ad": client.ad_soyad, "tc": client.tc_kimlik, "tel": client.telefon},
         "finans": {"toplam": hesap.toplam_borc if hesap else 0, "odenen": hesap.odenen if hesap else 0, "kalan": (hesap.toplam_borc - hesap.odenen) if hesap else 0},
-        "dosyalar": dosyalar_listesi
+        "dosyalar": [{"id": c.id, "dosya_no": c.dosya_no, "tur": c.tur.value, "durum": c.durum, "karsi_taraf": c.karsi_taraf, "asamalar": [{"tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama} for s in c.stages], "evraklar": [{"ad": d.evrak_adi, "yol": d.dosya_yolu} for d in c.documents]} for c in client.cases]
     }
 
 # --- C.R.U.D. (DÜZENLEME VE SİLME) ENDPOINTLERİ ---
 @app.delete("/api/cases/{case_id}")
 def delete_case(case_id: int, db: Session = Depends(get_db)):
     case = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
-    if not case: raise HTTPException(status_code=404)
-    db.delete(case); db.commit()
+    if case: db.delete(case); db.commit()
     return {"mesaj": "Dosya silindi."}
 
 @app.put("/api/cases/{case_id}")
 def update_case(case_id: int, req: CaseUpdate, db: Session = Depends(get_db)):
     case = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
-    if not case: raise HTTPException(status_code=404)
-    case.durum = req.durum
-    case.karsi_taraf = req.karsi_taraf
-    db.commit()
-    return {"mesaj": "Dosya güncellendi."}
+    if case: case.durum = req.durum; case.karsi_taraf = req.karsi_taraf; db.commit()
+    return {"mesaj": "Güncellendi."}
 
+# YENİ: OFİS GİDERİ API'LERİ EKLENDİ
 @app.post("/api/expenses")
 def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)):
     db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar))
@@ -103,9 +98,9 @@ def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)):
 def delete_expense(expense_id: int, db: Session = Depends(get_db)):
     exp = db.query(models.OfficeExpense).filter(models.OfficeExpense.id == expense_id).first()
     if exp: db.delete(exp); db.commit()
-    return {"mesaj": "Silindi"}
+    return {"mesaj": "Gider Silindi"}
 
-# --- YENİ KAYIT (CRM) ---
+# --- YENİ KAYIT ---
 @app.post("/api/add-client-case")
 def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
@@ -114,7 +109,7 @@ def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
         db.add(client); db.commit(); db.refresh(client)
     try: case_type = models.CaseType(data.tur)
     except: case_type = models.CaseType.DAVA
-    yeni_dosya = models.CaseFile(dosya_no=data.dosya_no, karsi_taraf=data.karsi_taraf, tur=case_type, durum="Sürece Başlandı", client_id=client.id)
+    yeni_dosya = models.CaseFile(dosya_no=data.dosya_no, karsi_taraf=data.karsi_taraf, tur=case_type, durum="Yeni Açıldı", client_id=client.id)
     db.add(yeni_dosya)
     if not client.account: db.add(models.Account(client_id=client.id, toplam_borc=0.0, odenen=0.0))
     db.add(models.CaseStage(aciklama="Dosya sisteme kaydedildi.", case_id=yeni_dosya.id))
@@ -167,12 +162,6 @@ def upload_document(case_id: int, file: UploadFile = File(...), db: Session = De
     db.commit()
     return {"m": "ok"}
 
-@app.post("/api/uyap-sync")
-def uyap_sync():
-    import time
-    time.sleep(1)
-    return {"mesaj": "UYAP Otomasyonu başarıyla çalıştırıldı (Simüle edildi). Sistem güncel."}
-
 # --- YAPAY ZEKA VE DİLEKÇE ---
 @app.post("/api/chat")
 def ai_chat(req: ChatRequest): return {"reply": "Ben Mehmet Alparslan. Sisteminizin yerleşik yapay zekasıyım. Hukuki sorunuzu analiz ettim. Somut olay verilerine göre hareket edilmelidir."}
@@ -210,6 +199,9 @@ def get_clients(db: Session = Depends(get_db)): return [{"id": c.id, "tc_kimlik"
 @app.get("/api/corporate-clients")
 def get_corporate_clients(db: Session = Depends(get_db)): return [{"id": c.id, "vergi_no": c.tc_kimlik, "unvan": c.ad_soyad, "telefon": c.telefon, "eposta": c.eposta} for c in db.query(models.Client).filter(models.Client.kurumsal_mi == True).all()]
 
+@app.get("/api/hearings")
+def get_hearings(db: Session = Depends(get_db)): return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih).all()]
+
 @app.get("/api/finance")
 def get_finance(db: Session = Depends(get_db)):
     accounts = db.query(models.Account).all()
@@ -236,7 +228,3 @@ def get_client_details(client_id: int, db: Session = Depends(get_db)):
 def search_client(query: str, db: Session = Depends(get_db)):
     cases = db.query(models.CaseFile).join(models.Client).outerjoin(models.Document).filter((models.Client.tc_kimlik.contains(query)) | (models.CaseFile.dosya_no.contains(query)) | (models.Client.ad_soyad.ilike(f"%{query}%")) | (models.Document.ocr_text.ilike(f"%{query}%"))).distinct().all()
     return [{"id": c.id, "dosya_no": c.dosya_no, "muvekkil": c.owner.ad_soyad, "tur": c.tur.value, "durum": c.durum, "is_closed": c.is_closed} for c in cases]
-
-@app.get("/api/hearings")
-def get_hearings(db: Session = Depends(get_db)):
-    return [{"tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat or "10:00", "mahkeme": h.mahkeme, "dosya_no": h.case_file.dosya_no, "muvekkil": h.case_file.owner.ad_soyad, "case_id": h.case_id} for h in db.query(models.Hearing).order_by(models.Hearing.tarih).all()]
