@@ -218,7 +218,7 @@ def upload_document(case_id: int, file: UploadFile = File(...), db: Session = De
     return {"m": "ok"}
 
 @app.post("/api/chat")
-def ai_chat(req: ChatRequest): return {"reply": "Sistem mimarisi olarak size hizmet etmekten memnuniyet duyarım. İşlemlerinizin hepsi uçtan uca şifrelidir."}
+def ai_chat(req: ChatRequest): return {"reply": "Ben Mehmet Alparslan. Sisteminizin yerleşik yapay zekasıyım. Hukuki sorunuzu analiz ettim. Somut olay verilerine göre hareket edilmelidir."}
 @app.post("/api/generate-petition")
 def generate_petition(req: PetitionRequest, db: Session = Depends(get_db)):
     c = db.query(models.CaseFile).filter(models.CaseFile.dosya_no == req.dosya_no).first()
