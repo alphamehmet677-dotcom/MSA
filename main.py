@@ -93,7 +93,6 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     raise HTTPException(status_code=401, detail="Hatalı Kimlik veya Şifre.")
 
 @app.post("/api/add-client-case")
-def @app.post("/api/add-client-case")
 def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
     if not client:
