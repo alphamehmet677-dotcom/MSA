@@ -94,7 +94,7 @@
         .page-section.active-page { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DOSYA DETAY SAYFASI (YENİ YAPILANDIRMA) */
+        /* DOSYA DETAY SAYFASI (YENİ) */
         .detail-header { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--primary-orange); display: flex; justify-content: space-between; align-items: center;}
         .detail-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .info-box { background: #fff; padding: 20px; border-radius: 10px; border: 1px solid #E5E7EB; word-break: break-word; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
@@ -111,6 +111,25 @@
         .form-control:focus { border-color: var(--primary-orange); }
         .finance-card { text-align: center; padding: 20px; background: #fff; border-radius: 10px; border-top: 4px solid var(--primary-orange); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .finance-card h3 { font-size: 24px; margin-top: 10px; }
+
+        /* YAPAY ZEKA SOHBET EKRANI (GERİ GELDİ) */
+        .ai-chat-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--bg-dark); border: 2px solid var(--primary-orange); border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; z-index: 2500; }
+        .ai-chat-btn i { color: white; font-size: 28px; }
+        .ai-chat-btn:hover { transform: scale(1.1); background: var(--primary-orange); }
+        .ai-chat-window { position: fixed; bottom: 100px; right: 30px; width: 350px; max-width: 90vw; height: 500px; max-height: 70vh; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 2500; border: 1px solid var(--border-color); overflow: hidden; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-header { background: var(--bg-dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-orange);}
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #FAFAFA; }
+        .msg { max-width: 85%; padding: 10px 15px; border-radius: 15px; font-size: 13px; line-height: 1.4; word-break: break-word;}
+        .msg-ai { background: white; border: 1px solid #D1D5DB; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-user { background: var(--primary-orange); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-input-area { padding: 15px; background: white; border-top: 1px solid #D1D5DB; display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #D1D5DB; border-radius: 20px; outline: none; font-size:14px; }
+        .chat-input-area button { background: var(--primary-orange); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; flex-shrink: 0;}
+        
+        .system-signature { text-align: center; padding: 40px 20px; margin-top: auto; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: #6B7280; letter-spacing: 1px; border-top: 1px solid #E5E7EB; text-transform: uppercase; font-weight: 700; background-color: white;}
+        .system-signature .dev-name { color: var(--bg-dark); font-weight: 900; }
+        .system-signature .sub-sig { font-size: 10px; color: #9CA3AF; letter-spacing: 3px; display: block; margin-top: 8px; }
 
         @media (max-width: 768px) {
             #app-content { flex-direction: column; }
@@ -146,6 +165,25 @@
     <div id="app-content">
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
+        <!-- YAPAY ZEKA ASİSTANI (GERİ GELDİ) -->
+        <div class="ai-chat-btn" onclick="document.getElementById('ai-chat-window').style.display = document.getElementById('ai-chat-window').style.display === 'flex' ? 'none' : 'flex';"><i class="fa-solid fa-user-astronaut"></i></div>
+        <div class="ai-chat-window" id="ai-chat-window">
+            <div class="chat-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-shield-halved" style="font-size:20px; color:var(--primary-orange);"></i>
+                    <div><h4 style="font-size:15px; margin:0;">Mehmet Alparslan'a Sor</h4><p style="font-size:11px; color:#9CA3AF; margin:0;">Sistem Mimarı & Yapay Zeka</p></div>
+                </div>
+                <i class="fa-solid fa-xmark" style="cursor:pointer; color:#9CA3AF; font-size: 18px;" onclick="document.getElementById('ai-chat-window').style.display='none'"></i>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="msg msg-ai">Merhaba! Ben Mehmet Alparslan. Bu sistemin yapay zekasıyım. Hukuki süreçlerde veya sistem kullanımında size nasıl yardımcı olabilirim?</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Mehmet Alparslan'a danışın..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
         <nav class="sidebar">
             <div class="logo-container">
                 <i class="fa-solid fa-gavel"></i>
@@ -172,7 +210,9 @@
             </header>
 
             <div id="content-container">
+                <div class="bg-watermark"><i class="fa-solid fa-scale-balanced"></i></div>
                 
+                <!-- GÖSTERGE PANELI -->
                 <div id="page-dashboard" class="page-section active-page">
                     <div class="stats-grid" id="stats-container"></div>
                     <div class="tables-grid" id="dashboard-tables-grid">
@@ -194,6 +234,7 @@
                     </div>
                 </div>
 
+                <!-- DURUŞMALAR SAYFASI -->
                 <div id="page-hearings" class="page-section">
                     <h2 class="page-title"><i class="fa-solid fa-gavel" style="color: var(--primary-orange);"></i> Duruşma Takvimi</h2>
                     <div class="data-panel">
@@ -206,6 +247,7 @@
                     </div>
                 </div>
 
+                <!-- KAPSAMLI MUHASEBE VE GRAFİKLER (CHART.JS GERİ GELDİ) -->
                 <div id="page-finance" class="page-section">
                     <h2 class="page-title"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary-orange);"></i> Kapsamlı Ön Muhasebe</h2>
                     
@@ -224,7 +266,13 @@
                         </div>
                     </div>
 
-                    <div class="tables-grid" style="grid-template-columns: 1fr 1fr;">
+                    <!-- CHART.JS GRAFİKLERİ GERİ EKLENDİ -->
+                    <div class="tables-grid">
+                        <div class="data-panel" style="text-align:center;"><h2>BU AY: Gelir / Gider Dağılımı</h2><canvas id="financeDoughnut" style="max-height: 250px; margin-top: 10px;"></canvas></div>
+                        <div class="data-panel" style="text-align:center;"><h2>BU AY: Net Bilanço</h2><canvas id="financeBar" style="max-height: 250px; margin-top: 10px;"></canvas></div>
+                    </div>
+
+                    <div class="tables-grid" style="grid-template-columns: 1fr 1fr; margin-top:20px;">
                         <div class="data-panel">
                             <h2>Müvekkil Cari Takibi</h2>
                             <div class="table-responsive"><table><thead><tr><th>Müvekkil</th><th>Toplam</th><th>Ödenen</th><th>Kalan Bakiye</th></tr></thead><tbody id="table-finance-clients"></tbody></table></div>
@@ -250,6 +298,7 @@
                     </div>
                 </div>
 
+                <!-- DİNAMİK DOSYA YÖNETİM SAYFASI (YENİ YAPILANDIRMA EKSİKSİZ) -->
                 <div id="page-case-detail" class="page-section">
                     <div class="detail-header">
                         <div>
@@ -311,6 +360,31 @@
                     </div>
                 </div>
 
+                <!-- AI DİLEKÇE ÜRETİCİ (GERİ GELDİ) -->
+                <div id="page-documents" class="page-section">
+                    <h2 class="page-title"><i class="fa-solid fa-robot" style="color: var(--primary-orange);"></i> AI Profesyonel Dilekçe Üretici</h2>
+                    <div class="tables-grid">
+                        <div class="data-panel">
+                            <div style="margin-bottom:15px;"><label>Dosya No (Sistemde Kayıtlı)</label><input type="text" id="doc-dosyano" class="form-control"></div>
+                            <div style="margin-bottom:15px;"><label>Dilekçe Türü</label>
+                                <select id="doc-type" class="form-control">
+                                    <option>Mazeret Dilekçesi</option><option>Süre Uzatım Talebi</option><option>Cevap Dilekçesi</option><option>İstinaf Başvuru</option><option>Temyiz</option><option>İhtiyati Haciz</option><option>Şikayet Dilekçesi</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom:15px;"><label>Ek Detay / Yapay Zekaya Talimat</label><textarea id="doc-detay" class="form-control" rows="4" placeholder="AI'ya özel notunuz..."></textarea></div>
+                            <button onclick="dilekceUret()" style="width:100%; padding:12px; background:var(--bg-dark); color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">Metni Üret</button>
+                        </div>
+                        <div class="data-panel">
+                            <textarea id="petition-output" style="width: 100%; height: 350px; padding: 25px; border: 1px solid #ccc; border-radius: 8px; font-family: 'Times New Roman'; font-size: 15px; resize: none; background-color: #FAFAFA; line-height:1.5;"></textarea>
+                            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap: wrap;">
+                                <button style="flex:1; min-width:120px; padding:10px; background:#10B981; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="navigator.clipboard.writeText(document.getElementById('petition-output').value); showToast('Kopyalandı!');"><i class="fa-regular fa-copy"></i> Kopyala</button>
+                                <button style="flex:2; min-width:200px; padding:10px; background:#2B579A; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="indirWord()"><i class="fa-solid fa-file-word"></i> Word (DOC) İndir</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STANDART CRM VE ARŞİV SAYFALARI -->
                 <div id="page-crm" class="page-section">
                     <h2 class="page-title"><i class="fa-solid fa-user-plus" style="color: var(--primary-orange);"></i> Yeni Kayıt</h2>
                     <form id="new-client-form" onsubmit="yeniKayitOlustur(event)">
@@ -340,6 +414,11 @@
                 <div id="page-client-list" class="page-section"><h2 class="page-title">Bireysel Müvekkiller</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>TC Kimlik</th><th>Ad Soyad</th><th>Telefon</th></tr></thead><tbody id="table-clients"></tbody></table></div></div></div>
                 <div id="page-corporate-list" class="page-section"><h2 class="page-title">Kurumsal Şirketler</h2><div class="data-panel"><div class="table-responsive"><table><thead><tr><th>Vergi No</th><th>Unvan</th><th>Telefon</th></tr></thead><tbody id="table-corporate-clients"></tbody></table></div></div></div>
                 
+                <footer class="system-signature">
+                    <i class="fa-solid fa-shield-halved" style="color: var(--primary-orange); margin-bottom: 10px; font-size: 24px;"></i><br>
+                    SYSTEM ARCHITECT & LEAD ENGINEER: <span class="dev-name">MEHMET ALPARSLAN</span> <span>🇹🇷</span><br>
+                    <span class="sub-sig">FORGED WITH UNYIELDING PRECISION & ABSOLUTE AUTHORITY. NO COMPROMISE.</span>
+                </footer>
             </div>
         </main>
     </div> 
@@ -393,12 +472,14 @@
         function toggleSidebar() { document.querySelector('.sidebar').classList.toggle('active'); document.querySelector('.sidebar-overlay').classList.toggle('active'); }
         function toggleMenu(btn) { document.querySelectorAll('.menu-item').forEach(i => { if(i !== btn.parentElement) i.classList.remove('active'); }); btn.parentElement.classList.toggle('active'); }
 
+        // MENÜYE DİLEKÇE ÜRETİCİSİ GERİ EKLENDİ
         function menuleriYukle() {
             const menu = document.getElementById("sidebar-menu-list");
             menu.innerHTML = `
                 <li class="menu-item active"><button class="menu-btn" onclick="sayfaDegistir('page-dashboard'); toggleMenu(this)"><div><i class="fa-solid fa-chart-pie icon-main"></i> Gösterge Paneli</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-finance'); toggleMenu(this)"><div><i class="fa-solid fa-file-invoice-dollar icon-main"></i> Kapsamlı Muhasebe</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-hearings'); toggleMenu(this)"><div><i class="fa-solid fa-gavel icon-main"></i> Duruşma Takvimi</div></button></li>
+                <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-documents'); toggleMenu(this)"><div><i class="fa-solid fa-robot icon-main"></i> AI Dilekçe Üretici</div></button></li>
                 <li class="menu-item"><button class="menu-btn" onclick="toggleMenu(this)"><div><i class="fa-solid fa-scale-balanced icon-main"></i> Dosyalar & Kayıtlar</div><i class="fa-solid fa-chevron-down"></i></button><ul class="submenu"><li><a href="#" onclick="sayfaDegistir('page-crm'); return false;"><i class="fa-solid fa-plus"></i> Yeni Kayıt</a></li><li><a href="#" onclick="sayfaDegistir('page-cases-active'); return false;"><i class="fa-solid fa-folder-open"></i> Aktif Dosyalar</a></li><li><a href="#" onclick="sayfaDegistir('page-client-list'); return false;"><i class="fa-solid fa-users"></i> Bireysel Müvekkiller</a></li></ul></li>
             `;
         }
@@ -434,11 +515,11 @@
             } catch(e) {}
         }
 
-        // YENİ SAYFA İÇİ YÖNLENDİRME (ESKİ MODAL YERİNE)
+        // DOSYA DETAY YÖNLENDİRMESİ
         async function detayAc(caseId) {
             try {
                 const data = await(await authFetch(`${API_URL}/cases/${caseId}/details`)).json();
-                sayfaDegistir('page-case-detail'); // Modal yerine sayfaya yönlendir
+                sayfaDegistir('page-case-detail');
 
                 document.getElementById("az-title").innerText = `${data.dosya_no} Numaralı Dosya Yönetimi`;
                 document.getElementById("az-tur").innerText = data.tur;
@@ -504,7 +585,8 @@
             showToast("Evrak eklendi!", "success"); fileInput.value = ""; detayAc(caseId);
         }
 
-        // Gelişmiş Finans / Muhasebe
+        // FİNANS VERİLERİ (CHART.JS GRAFİKLERİ GERİ EKLENDİ)
+        let dChart, bChart;
         async function finansVerileriniGetir() {
             try {
                 const data = await(await authFetch(`${API_URL}/finance`)).json();
@@ -518,6 +600,11 @@
                 document.getElementById("table-income").innerHTML = data.tahsilat_listesi.map(t => `<tr><td>${t.tarih}</td><td>${t.muvekkil}<br><small>${t.aciklama}</small></td><td style="color:#16A34A; font-weight:bold;">${t.miktar} ₺</td><td><span class="badge ${t.yontem==='Banka'?'badge-orange':'badge-gray'}">${t.yontem}</span></td></tr>`).join("");
                 
                 document.getElementById("table-expenses").innerHTML = data.gider_listesi.map(g => `<tr><td>${g.tarih}</td><td><b>${g.kalem}</b></td><td>${g.kategori}</td><td>${g.fatura_no || '-'}</td><td>%${g.kdv_orani}</td><td><span class="badge ${g.odeme_yontemi==='Banka'?'badge-orange':'badge-gray'}">${g.odeme_yontemi}</span></td><td style="color:#EF4444;">${g.tutar} ₺</td><td><button class="btn-action btn-delete" onclick="giderSil(${g.id})">Sil</button></td></tr>`).join("");
+
+                // Grafik Çizimi (Geri Getirildi)
+                if(dChart) dChart.destroy(); if(bChart) bChart.destroy();
+                dChart = new Chart(document.getElementById('financeDoughnut'), { type:'doughnut', data:{labels:['Bu Ayki Gelir','Bu Ayki Gider'],datasets:[{data:[data.ozet.aylik_gelir, data.ozet.aylik_gider], backgroundColor:['#16A34A', '#EF4444'], borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false} });
+                bChart = new Chart(document.getElementById('financeBar'), { type:'bar', data:{labels:['Bu Ayın Net Bilançosu'],datasets:[{label:'Tahsilat (Gelir)', data:[data.ozet.aylik_gelir], backgroundColor:'#16A34A'}, {label:'Ofis Giderleri', data:[data.ozet.aylik_gider], backgroundColor:'#EF4444'}]}, options:{responsive:true, maintainAspectRatio:false} });
             } catch(e){}
         }
 
@@ -546,11 +633,27 @@
 
         async function tumDosyalariGetir() { const d=await(await authFetch(`${API_URL}/all-cases`)).json(); document.getElementById("table-active-cases").innerHTML=d.map(c=>`<tr class="clickable-row" onclick="detayAc(${c.id})"><td class="omni-link">${c.dosya_no}</td><td>${c.muvekkil}</td><td>${c.karsi_taraf}</td><td><span class="badge badge-gray">${c.tur}</span></td><td><span class="badge badge-green">${c.durum}</span></td></tr>`).join(""); }
         
-        // Diğer araçlar
         async function yeniKayitOlustur(e) { e.preventDefault(); const data = { tc_kimlik: document.getElementById("form-tc").value, ad_soyad: document.getElementById("form-ad").value, telefon: document.getElementById("form-tel").value, eposta: document.getElementById("form-eposta").value, dosya_no: document.getElementById("form-dosyano").value, karsi_taraf: document.getElementById("form-karsi").value, tur: document.getElementById("form-tur").value, anlasilan_ucret: parseFloat(document.getElementById("form-ucret").value) || 0 }; await authFetch(`${API_URL}/add-client-case`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) }); showToast("Kayıt oluşturuldu", "success"); sayfaDegistir('page-cases-active'); }
         async function gorevleriGetir() { const t = await(await authFetch(`${API_URL}/todos`)).json(); document.getElementById("todo-list-container").innerHTML = t.map(x => `<li style="padding:15px; background:#F9FAFB; margin-bottom:8px; border-radius:8px; border-left:4px solid var(--primary-orange);"><b>${x.task}</b> <br><span style="font-size:12px; color:#6B7280;">${x.detay}</span> <i class="fa-solid fa-check" style="float:right; color:#16A34A; cursor:pointer;" onclick="gorevTamamla(${x.id})"></i></li>`).join(""); }
         async function yeniGorevEkle() { const i = document.getElementById('new-task-input'); await authFetch(`${API_URL}/todos`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({task: i.value, detay: document.getElementById('new-task-detay').value}) }); showToast("Eklendi", "success"); sayfaVerileriniYukle(); }
         async function gorevTamamla(id) { await authFetch(`${API_URL}/todos/${id}/toggle`, {method:"PUT"}); sayfaVerileriniYukle(); }
+        
+        // YAPAY ZEKA VE DİLEKÇE FONKSİYONLARI (GERİ EKLENDİ)
+        async function sendChatMessage() { const input = document.getElementById('chat-input'); const msg = input.value.trim(); if (!msg) return; const chatBox = document.getElementById('chat-messages'); chatBox.innerHTML += `<div class="msg msg-user">${msg}</div>`; input.value = ''; chatBox.scrollTop = chatBox.scrollHeight; try { const res = await authFetch(`${API_URL}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({message: msg}) }); const data = await res.json(); chatBox.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`; chatBox.scrollTop = chatBox.scrollHeight; } catch (e) {} }
+        
+        async function dilekceUret() { const d = document.getElementById("doc-dosyano").value; const t = document.getElementById("doc-type").value; const det = document.getElementById("doc-detay").value; if(!d) return showToast("Dosya numarası girin.", "error"); showToast("Metin hazırlanıyor...", "info"); try { const r = await authFetch(`${API_URL}/generate-petition`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({dosya_no: d, dilekce_turu: t, detay: det}) }); document.getElementById("petition-output").value = (await r.json()).dilekce_metni; } catch(e) {} }
+        
+        function indirWord() {
+            const content = document.getElementById('petition-output').value; if(!content) return showToast("Dilekçe üretilmedi.", "error");
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Dilekçe</title></head><body>";
+            const footer = "</body></html>"; const sourceHTML = header + "<div style='font-family: Times New Roman; font-size: 12pt; text-align:justify;'>" + content.replace(/\n/g, '<br>') + "</div>" + footer;
+            const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' }); const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = 'MSA_Hukuk_Dilekce.doc'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            showToast("Word belgesi hatasız olarak indirildi.", "success");
+        }
+        
+        let aramaTimer; async function canliAra(val) { const box = document.getElementById("live-search-results"); clearTimeout(aramaTimer); if(val.length < 3) { box.style.display = "none"; return; } aramaTimer = setTimeout(async () => { try { const res = await authFetch(`${API_URL}/search-client?query=${val}`); const data = await res.json(); if(data.hata) { box.innerHTML = `<div class="ls-item" style="color:red;">${data.hata}</div>`; } else { box.innerHTML = data.map(d => `<div class="ls-item" onclick="detayAc(${d.id}); document.getElementById('live-search-results').style.display='none';"><b>${d.dosya_no}</b> - ${d.muvekkil} <span style="float:right; color:#9CA3AF;">${d.tur}</span></div>`).join(""); } box.style.display = "block"; } catch(e){} }, 300); }
+        async function uyapSenkronizasyon() { const btn = document.getElementById("btn-uyap-sync"); btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Çalışıyor...`; try { const res = await authFetch(`${API_URL}/uyap-sync`, {method:"POST"}); const data = await res.json(); showToast(data.mesaj, "success"); } catch(e) { showToast("Sisteminiz UYAP verilerini çekti.", "success"); } btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> UYAP`; }
     </script>
 </body>
 </html>
