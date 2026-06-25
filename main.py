@@ -35,6 +35,9 @@ def safe_verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 models.Base.metadata.create_all(bind=engine)
+def log_action(db: Session, kullanici: str, islem_tipi: str, detay: str):
+    yeni_log = models.AuditLog(kullanici=kullanici, islem_tipi=islem_tipi, detay=detay)
+    db.add(yeni_log)
 
 try:
     db_check = SessionLocal()
