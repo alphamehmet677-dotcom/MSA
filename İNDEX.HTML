@@ -532,6 +532,7 @@
                     <ul class="submenu">
                         <li><a href="#" onclick="sayfaDegistir('page-cases-closed'); return false;"><i class="fa-solid fa-folder-closed"></i> Kapanmış Dosyalar</a></li>
                         <li><a href="#" onclick="sayfaDegistir('page-todo-archive'); return false;"><i class="fa-solid fa-check-double"></i> Görev & İşlem Arşivi</a></li>
+                        <li><a href="#" onclick="sayfaDegistir('page-audit'); return false;"><i class="fa-solid fa-user-secret"></i> Sistem İşlem Arşivi</a></li>
                     </ul>
                 </li>
                 <li class="menu-item"><button class="menu-btn" onclick="sayfaDegistir('page-documents'); toggleMenu(this)"><div><i class="fa-solid fa-robot icon-main"></i> AI Dilekçe Üretici</div></button></li>
@@ -551,8 +552,14 @@
             else if(id === 'page-finance') finansVerileriniGetir(); 
             else if(id === 'page-hearings') durusmalariGetir();
             else if(id === 'page-todo-archive') ajandaArsiviniGetir();
+            else if(id === 'page-audit') islemArsiviniGetir();
         }
-
+        async function islemArsiviniGetir() { 
+    try { 
+        const data = await(await authFetch(`${API_URL}/audit-logs`)).json(); 
+        document.getElementById("table-audit-logs").innerHTML = data.map(l => `<tr><td style="color:#6B7280; font-size:12px;"><b>${l.tarih}</b></td><td><span class="badge badge-gray"><i class="fa-solid fa-user"></i> ${l.kullanici}</span></td><td><span class="badge badge-orange">${l.islem}</span></td><td>${l.detay}</td></tr>`).join(""); 
+    } catch(e){} 
+}
         async function sayfaVerileriniYukle() {
             try {
                 const statsRes = await authFetch(`${API_URL}/dashboard-stats`);
