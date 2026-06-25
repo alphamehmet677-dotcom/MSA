@@ -50,7 +50,7 @@ class CaseFile(Base):
     karsi_taraf = Column(String)
     tur = Column(Enum(CaseType))
     durum = Column(String) 
-    anlasilan_ucret = Column(Float, default=0.0) # YENİ: Dosya bazlı ücret
+    anlasilan_ucret = Column(Float, default=0.0)
     is_closed = Column(Boolean, default=False)
     kapanis_tarihi = Column(DateTime, nullable=True)
     acilis_tarihi = Column(DateTime, default=datetime.utcnow)
@@ -61,12 +61,14 @@ class CaseFile(Base):
     stages = relationship("CaseStage", back_populates="case_file", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="case_file", cascade="all, delete-orphan")
 
-# YENİ: AYLIK BAZLI TAHSİLAT TAKİBİ
 class Payment(Base):
     __tablename__ = "payments"
     id = Column(Integer, primary_key=True, index=True)
     miktar = Column(Float)
     tarih = Column(DateTime, default=datetime.utcnow)
+    odeme_yontemi = Column(String, default="Banka") # Kasa veya Banka
+    makbuz_no = Column(String, nullable=True)
+    aciklama = Column(String, nullable=True)
     client_id = Column(Integer, ForeignKey("clients.id"))
     client = relationship("Client", back_populates="payments")
 
@@ -122,4 +124,7 @@ class OfficeExpense(Base):
     kalem = Column(String)
     kategori = Column(String) 
     tutar = Column(Float)
+    kdv_orani = Column(Integer, default=20)
+    odeme_yontemi = Column(String, default="Banka") # Kasa veya Banka
+    fatura_no = Column(String, nullable=True)
     tarih = Column(Date, default=date.today)
