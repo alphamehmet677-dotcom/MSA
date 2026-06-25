@@ -303,3 +303,8 @@ def search_client(query: str, db: Session = Depends(get_db)):
 @app.post("/api/uyap-sync")
 def uyap_sync(db: Session = Depends(get_db)):
     return {"mesaj": "Sisteminiz UYAP verilerini başarıyla çekti."}
+@app.get("/api/audit-logs")
+def get_audit_logs(db: Session = Depends(get_db)):
+    # Son 100 işlemi en yeniden eskiye doğru sıralayarak getirir
+    logs = db.query(models.AuditLog).order_by(models.AuditLog.id.desc()).limit(100).all()
+    return [{"kullanici": l.kullanici, "islem": l.islem_tipi, "detay": l.detay, "tarih": l.tarih.strftime("%d.%m.%Y %H:%M")} for l in logs]
