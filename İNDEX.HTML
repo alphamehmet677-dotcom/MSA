@@ -511,7 +511,17 @@
                 } else { showToast("Girdiğiniz bilgiler hatalı.", "error"); }
             } catch(e) { showToast("Sunucu hatası.", "error"); }
         }
-
+        async function hizliSorgula() {
+            const tc = document.getElementById("inq-tc").value; const dosya = document.getElementById("inq-dosya").value;
+            if(!tc || !dosya) return showToast("Lütfen TC ve Dosya Numarasını eksiksiz girin.", "error");
+            try {
+                const res = await fetch(`${API_URL}/inquiry`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({tc_kimlik: tc, dosya_no: dosya})});
+                const data = await res.json();
+                const box = document.getElementById("inq-result"); box.style.display = "block";
+                if(!res.ok) { box.innerHTML = `<span style="color:red; font-weight:bold;"><i class="fa-solid fa-circle-exclamation"></i> ${data.detail}</span>`; }
+                else { box.innerHTML = `<span style="color:var(--primary-orange); font-weight:bold;">Sn. ${data.ad}</span><br><br><b>Dosya Türü:</b> ${data.tur}<br><b>Karşı Taraf:</b> ${data.karsi_taraf}<br><b>Güncel Aşama:</b> <span style="color:#16A34A; font-weight:bold;">${data.durum}</span>`; }
+            } catch(e) { showToast("Sorgulama başarısız.", "error"); }
+        }
         function cikisYap() { localStorage.clear(); location.reload(); }
 
         function uygulamayaGec() {
@@ -608,7 +618,8 @@
                 gorevleriGetir();
             } catch(e) { console.error(e); }
         }
-
+        async function gorunurlukDegistir(tur, id) { await authFetch(`${API_URL}/${tur}/${id}/toggle-visibility`, {method:"PUT"}); detayAc(document.getElementById("az-case-id").value); }
+        async function asamaEvrakSil(tur, id) { if(!confirm("Kaydı tamamen silmek istediğinize emin misiniz?")) return; await authFetch(`${API_URL}/${tur}/${id}`, {method:"DELETE"}); detayAc(document.getElementById("az-case-id").value); }
         async function detayAc(caseId) {
             try {
                 const data = await(await authFetch(`${API_URL}/cases/${caseId}/details`)).json();
@@ -637,7 +648,24 @@
                 let timeHtml = data.asamalar.map(a => `<div class="timeline-item"><b>${a.tarih}</b> - ${a.aciklama}</div>`).join("");
                 timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad} <i class="fa-solid fa-download"></i></a></div>`).join("");
                 document.getElementById("az-timeline").innerHTML = timeHtml || "Kayıt yok.";
+                if(isMuvekkil) {
+                    document.getElementById("az-payment-section").style.display = "none"; document.getElementById("az-edit-section").style.display = "none";
+                    document.getElementById("az-hearing-add-section").style.display = "none"; document.getElementById("az-evrak-add-section").style.display = "none";
+                } else {
+                    document.getElementById("az-payment-section").style.display = "block"; document.getElementById("az-edit-section").style.display = "block";
+                    document.getElementById("az-hearing-add-section").style.display = "block"; document.getElementById("az-evrak-add-section").style.display = "block";
+                }
 
+                // 👇👇👇 YENİ EKLENEN KISIM: Yetkiye göre Göz/Sil butonları gösterme ve Timeline Güncellemesi 👇👇👇
+                let timeHtml = data.asamalar.map(a => `<div class="timeline-item"><b>${a.tarih}</b> - ${a.aciklama} ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${a.gor ? '' : '-slash'}" style="color:${a.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('stages', ${a.id})" title="Müvekkil Görebilir Toggle"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('stages', ${a.id})"></i></div>` : ''}</div>`).join("");
+                timeHtml += data.evraklar.map(e => `<div class="timeline-item"><i class="fa-solid fa-file-pdf" style="color:red;"></i> <b>${e.tarih}</b> - <a href="${API_URL}/${e.yol}" target="_blank" class="omni-link">${e.ad}</a> ${!isMuvekkil ? `<div style="float:right;"><i class="fa-solid fa-eye${e.gor ? '' : '-slash'}" style="color:${e.gor ? '#16A34A' : '#9CA3AF'}; cursor:pointer; margin-right:8px;" onclick="gorunurlukDegistir('documents', ${e.id})"></i><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="asamaEvrakSil('documents', ${e.id})"></i></div>` : ''}</div>`).join("");
+                document.getElementById("az-timeline").innerHTML = timeHtml || "Kayıt yok.";
+
+                let hHtml = "";
+                if(data.durusmalar && data.durusmalar.length > 0) {
+                    hHtml = data.durusmalar.map(h => `<div style="border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; align-items:center;"><b>${h.tarih} - ${h.saat}</b> ${!isMuvekkil ? `<i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="durusmaSil(${h.id})"></i>` : ''}</div><div style="font-size:13px; color:#4B5563;">${h.mahkeme}</div><div style="margin-top:5px; display:flex; gap:5px;"> ${!isMuvekkil ? `<input type="text" id="h-res-${h.id}" class="form-control" style="margin:0; padding:5px; font-size:12px;" placeholder="Sonuç / Not girin..." value="${h.sonuc}"><button class="btn-action btn-edit" style="margin:0; padding:5px 10px;" onclick="durusmaSonucKaydet(${h.id})">Kaydet</button>` : `<span style="font-size:13px; color:var(--primary-orange);">${h.sonuc || 'Sonuç girilmedi.'}</span>`}</div></div>`).join("");
+                } else { hHtml = "<i style='font-size:13px; color:#9CA3AF;'>Kayıtlı duruşma bulunmuyor.</i>"; }
+                document.getElementById("az-hearings-list").innerHTML = hHtml;
                 let hHtml = "";
                 if(data.durusmalar && data.durusmalar.length > 0) {
                     hHtml = data.durusmalar.map(h => `
