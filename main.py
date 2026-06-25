@@ -258,7 +258,7 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     d = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if d: db.delete(d); db.commit()
     return {"m": "ok"}
-
+    
 @app.get("/api/clients/{client_id}/details")
 def get_client_details(client_id: int, db: Session = Depends(get_db)):
     c = db.query(models.Client).filter(models.Client.id == client_id).first()
@@ -311,7 +311,7 @@ def get_todo_archive(db: Session = Depends(get_db)): return [{"task": t.task, "d
 def toggle_todo(todo_id: int, db: Session = Depends(get_db)): t = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first(); t.is_completed = True; t.status = "Tamamlandı"; t.completed_at = datetime.utcnow(); db.commit(); return {"m": "ok"}
 
 @app.delete("/api/todos/{todo_id}")
-def delete_todo(todo_id: int, db: Session = Depends(get_db)): t = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first(); t.is_completed = True; t.status = "İptal Edildi"; t.completed_at = datetime.utcnow(); db.commit(); return {"m": "ok"}
+def delete_todo(todo_id: int, db: Session = Depends(get_db)): t = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first(); db.delete(t); db.commit(); return {"m": "ok"}
 
 @app.post("/api/cases/{case_id}/upload")
 def upload_document(case_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
