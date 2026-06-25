@@ -14,25 +14,26 @@ from database import SessionLocal, engine
 from datetime import date, timedelta, datetime
 import models
 import mock_data
-from passlib.context import CryptContext
+import bcrypt # ÇÖKME YARATAN PASSLIB YERİNE SAF BCRYPT EKLENDİ
 
 # Güvenlik Ayarları
 SECRET_KEY = "merve_safa_alparslan_erp_secret"
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# GÜNCELLEME: Eski düz metin şifrelerin sistemi çökertmesini engelleyen güvenli kontrol
-def safe_verify_password(plain_password, hashed_password):
+# GÜNCELLEME: Çökmeyen, hatasız ve doğrudan çalışan şifreleme algoritması
+def get_password_hash(password: str) -> str:
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
+
+def safe_verify_password(plain_password: str, hashed_password: str) -> bool:
     if not hashed_password:
         return False
     if hashed_password == plain_password:
-        return True
+        return True # Eski düz metin şifreler için kurtarıcı blok
     try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except ValueError:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
         return False
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -51,7 +52,7 @@ if not db_init.query(models.User).filter(models.User.username == "merve").first(
 db_init.close()
 
 os.makedirs("uploads", exist_ok=True)
-app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="10.1.0")
+app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="10.5.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -178,7 +179,6 @@ def get_clients(db: Session = Depends(get_db)): return [{"id": c.id, "tc_kimlik"
 @app.get("/api/corporate-clients")
 def get_corporate_clients(db: Session = Depends(get_db)): return [{"id": c.id, "vergi_no": c.tc_kimlik, "unvan": c.ad_soyad, "telefon": c.telefon, "eposta": c.eposta} for c in db.query(models.Client).filter(models.Client.kurumsal_mi == True).all()]
 
-# GÜNCELLEME: Çökmeyi engelleyen tamamen güvenli yeni finans ve tarih algoritması
 @app.get("/api/finance")
 def get_finance(db: Session = Depends(get_db)):
     accounts = db.query(models.Account).all()
