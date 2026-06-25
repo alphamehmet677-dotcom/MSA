@@ -9,6 +9,23 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg-dark: #1E2126; --bg-panel: #2A2D34; --bg-main: #F3F4F6; --text-light: #E5E7EB; --text-dark: #1F2937; --primary-orange: #F97316; --hover-orange: #EA580C; --border-color: #374151; }
+        body.dark-theme {
+    --bg-main: #121212;
+    --bg-panel: #1E1E1E;
+    --text-dark: #E5E7EB;
+    --border-color: #333;
+}
+body.dark-theme .data-panel, body.dark-theme .stat-card, body.dark-theme .topbar, body.dark-theme .info-box, body.dark-theme .finance-card {
+    background: #1E1E1E !important;
+    color: #E5E7EB;
+    border-color: #333;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+body.dark-theme th { color: #A1A1AA; }
+body.dark-theme td { color: #E5E7EB; border-bottom: 1px solid #333; }
+body.dark-theme .search-bar input { color: #FFF; }
+body.dark-theme .search-bar { background: #333; border-color: #444; }
+body.dark-theme .page-title { color: #E5E7EB; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--bg-main); overflow: hidden; position: relative; }
 
