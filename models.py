@@ -31,8 +31,9 @@ class Client(Base):
     id = Column(Integer, primary_key=True, index=True)
     tc_kimlik = Column(String, unique=True, index=True)
     ad_soyad = Column(String, index=True)
-    telefon = Column(String)
-    eposta = Column(String)
+    password = Column(String, default="123456") # Müvekkil portalı giriş şifresi
+    telefon = Column(String, nullable=True)
+    eposta = Column(String, nullable=True)
     adres = Column(Text, nullable=True)
     kurumsal_mi = Column(Boolean, default=False)
     kayit_tarihi = Column(DateTime, default=datetime.utcnow)
