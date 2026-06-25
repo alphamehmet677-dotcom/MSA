@@ -84,24 +84,29 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         return {"token": jwt.encode({"sub": user.username, "role": "Avukat", "ad": user.ad_soyad}, SECRET_KEY, algorithm="HS256"), "role": "Avukat", "ad_soyad": user.ad_soyad}
     
     client = db.query(models.Client).filter(models.Client.tc_kimlik == req.username).first()
-    if client and safe_verify_password(req.password, client.password):
-        if client.password == req.password:
-            client.password = get_password_hash(req.password)
+    # AŞAĞIDAKİ 3 SATIRDA client.password YERİNE client.password_hash KULLANILMALIDIR
+    if client and safe_verify_password(req.password, client.password_hash):
+        if client.password_hash == req.password:
+            client.password_hash = get_password_hash(req.password)
             db.commit()
         return {"token": jwt.encode({"sub": client.tc_kimlik, "role": "Müvekkil", "ad": client.ad_soyad, "id": client.id}, SECRET_KEY, algorithm="HS256"), "role": "Müvekkil", "ad_soyad": client.ad_soyad, "client_id": client.id}
     raise HTTPException(status_code=401, detail="Hatalı Kimlik veya Şifre.")
 
 @app.post("/api/add-client-case")
+def @app.post("/api/add-client-case")
 def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
     if not client:
         default_pw = get_password_hash("123456")
-        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password=default_pw)
+        # BURADA password YERİNE password_hash KULLANILMALIDIR
+        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password_hash=default_pw)
         db.add(client); db.commit(); db.refresh(client)
     else:
         client.telefon = data.telefon; client.eposta = data.eposta
+    
     try: case_type = models.CaseType(data.tur)
     except: case_type = models.CaseType.DAVA
+    
     yeni_dosya = models.CaseFile(dosya_no=data.dosya_no, karsi_taraf=data.karsi_taraf, tur=case_type, durum="Yeni Açıldı", anlasilan_ucret=data.anlasilan_ucret, client_id=client.id)
     db.add(yeni_dosya)
     if not client.account: db.add(models.Account(client_id=client.id, toplam_borc=data.anlasilan_ucret, odenen=0.0))
