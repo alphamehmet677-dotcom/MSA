@@ -19,7 +19,6 @@ import bcrypt
 # Güvenlik Ayarları
 SECRET_KEY = "merve_safa_alparslan_erp_secret"
 
-# Güvenli Şifreleme Algoritması (passlib tamamen kaldırıldı)
 def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
@@ -64,11 +63,6 @@ def get_db():
     try: yield db
     finally: db.close()
 
-def log_action(db: Session, kullanici: str, islem_tipi: str, detay: str):
-    new_log = models.AuditLog(kullanici=kullanici, islem_tipi=islem_tipi, detay=detay)
-    db.add(new_log)
-    db.commit()
-
 class ChatRequest(BaseModel): message: str
 class PetitionRequest(BaseModel): dosya_no: str; dilekce_turu: str; detay: str = ""
 class LoginRequest(BaseModel): username: str; password: str
@@ -87,17 +81,14 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         if user.password_hash == req.password:
             user.password_hash = get_password_hash(req.password)
             db.commit()
-        log_action(db, user.username, "GİRİŞ", "Sisteme giriş yapıldı.")
         return {"token": jwt.encode({"sub": user.username, "role": "Avukat", "ad": user.ad_soyad}, SECRET_KEY, algorithm="HS256"), "role": "Avukat", "ad_soyad": user.ad_soyad}
     
     client = db.query(models.Client).filter(models.Client.tc_kimlik == req.username).first()
-    if client and safe_verify_password(req.password, client.password_hash):
-        if client.password_hash == req.password:
-            client.password_hash = get_password_hash(req.password)
+    if client and safe_verify_password(req.password, client.password):
+        if client.password == req.password:
+            client.password = get_password_hash(req.password)
             db.commit()
-        log_action(db, client.tc_kimlik, "GİRİŞ", "Müvekkil portalına giriş yapıldı.")
         return {"token": jwt.encode({"sub": client.tc_kimlik, "role": "Müvekkil", "ad": client.ad_soyad, "id": client.id}, SECRET_KEY, algorithm="HS256"), "role": "Müvekkil", "ad_soyad": client.ad_soyad, "client_id": client.id}
-    
     raise HTTPException(status_code=401, detail="Hatalı Kimlik veya Şifre.")
 
 @app.post("/api/add-client-case")
@@ -105,7 +96,7 @@ def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
     if not client:
         default_pw = get_password_hash("123456")
-        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password_hash=default_pw)
+        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password=default_pw)
         db.add(client); db.commit(); db.refresh(client)
     else:
         client.telefon = data.telefon; client.eposta = data.eposta
@@ -117,7 +108,6 @@ def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     else: client.account.toplam_borc += data.anlasilan_ucret
     db.add(models.CaseStage(aciklama="Dosya sisteme kaydedildi.", case_id=yeni_dosya.id))
     db.commit()
-    log_action(db, "Avukat", "YENİ_DOSYA", f"{data.dosya_no} sisteme eklendi.")
     return {"mesaj": "Başarılı"}
 
 @app.put("/api/cases/{case_id}/update-all")
@@ -149,7 +139,6 @@ def add_payment(client_id: int, req: PaymentCreate, db: Session = Depends(get_db
     client.account.odenen += req.miktar
     db.add(models.Payment(client_id=client.id, miktar=req.miktar, odeme_yontemi=req.odeme_yontemi, aciklama=req.aciklama, makbuz_no=req.makbuz_no))
     db.commit()
-    log_action(db, "Sistem", "TAHSİLAT", f"{client.ad_soyad} carisine {req.miktar} TL eklendi.")
     return {"mesaj": "Tahsilat eklendi."}
 
 @app.get("/api/dashboard-stats")
@@ -179,29 +168,30 @@ def get_clients(db: Session = Depends(get_db)): return [{"id": c.id, "tc_kimlik"
 @app.get("/api/corporate-clients")
 def get_corporate_clients(db: Session = Depends(get_db)): return [{"id": c.id, "vergi_no": c.tc_kimlik, "unvan": c.ad_soyad, "telefon": c.telefon, "eposta": c.eposta} for c in db.query(models.Client).filter(models.Client.kurumsal_mi == True).all()]
 
+# BURASI ÇÖKMEYİ ENGELLEYEN EN KRİTİK NOKTADIR. HİÇBİR ZAMAN DEĞİŞTİRME.
 @app.get("/api/finance")
 def get_finance(db: Session = Depends(get_db)):
     accounts = db.query(models.Account).all()
     giderler = db.query(models.OfficeExpense).all()
     tahsilatlar = db.query(models.Payment).all()
     
-    kasa_giren = sum(t.miktar for t in tahsilatlar if t.odeme_yontemi == "Kasa")
-    banka_giren = sum(t.miktar for t in tahsilatlar if t.odeme_yontemi == "Banka")
-    kasa_cikan = sum(g.tutar for g in giderler if g.odeme_yontemi == "Kasa")
-    banka_cikan = sum(g.tutar for g in giderler if g.odeme_yontemi == "Banka")
+    kasa_giren = sum(t.miktar for t in tahsilatlar if t.odeme_yontemi == "Kasa" and t.miktar)
+    banka_giren = sum(t.miktar for t in tahsilatlar if t.odeme_yontemi == "Banka" and t.miktar)
+    kasa_cikan = sum(g.tutar for g in giderler if g.odeme_yontemi == "Kasa" and g.tutar)
+    banka_cikan = sum(g.tutar for g in giderler if g.odeme_yontemi == "Banka" and g.tutar)
     
     curr_month = date.today().month
     curr_year = date.today().year
     
-    aylik_gider = sum(g.tutar for g in giderler if g.tarih and g.tarih.month == curr_month and g.tarih.year == curr_year)
-    aylik_gelir = sum(t.miktar for t in tahsilatlar if t.tarih and t.tarih.month == curr_month and t.tarih.year == curr_year)
+    aylik_gider = sum(g.tutar for g in giderler if g.tarih and g.tarih.month == curr_month and g.tarih.year == curr_year and g.tutar)
+    aylik_gelir = sum(t.miktar for t in tahsilatlar if t.tarih and t.tarih.month == curr_month and t.tarih.year == curr_year and t.miktar)
     
     return {
         "kasa_bakiye": kasa_giren - kasa_cikan,
         "banka_bakiye": banka_giren - banka_cikan,
-        "liste": [{"muvekkil": a.client.ad_soyad, "toplam": a.toplam_borc, "odenen": a.odenen, "kalan": a.toplam_borc - a.odenen} for a in accounts if a.client], 
-        "gider_listesi": [{"id": g.id, "kalem": g.kalem, "kategori": g.kategori, "tutar": g.tutar, "kdv_orani": g.kdv_orani, "odeme_yontemi": g.odeme_yontemi, "fatura_no": g.fatura_no, "tarih": g.tarih.strftime("%d.%m.%Y")} for g in giderler], 
-        "tahsilat_listesi": [{"id": t.id, "muvekkil": t.client.ad_soyad, "miktar": t.miktar, "yontem": t.odeme_yontemi, "aciklama": t.aciklama, "tarih": t.tarih.strftime("%d.%m.%Y")} for t in tahsilatlar if t.client],
+        "liste": [{"muvekkil": a.client.ad_soyad if a.client else "-", "toplam": a.toplam_borc or 0, "odenen": a.odenen or 0, "kalan": (a.toplam_borc or 0) - (a.odenen or 0)} for a in accounts], 
+        "gider_listesi": [{"id": g.id, "kalem": g.kalem or "-", "kategori": g.kategori or "-", "tutar": g.tutar or 0, "kdv_orani": g.kdv_orani or 0, "odeme_yontemi": g.odeme_yontemi or "-", "fatura_no": g.fatura_no or "-", "tarih": g.tarih.strftime("%d.%m.%Y") if g.tarih else "-"} for g in giderler], 
+        "tahsilat_listesi": [{"id": t.id, "muvekkil": t.client.ad_soyad if t.client else "-", "miktar": t.miktar or 0, "yontem": t.odeme_yontemi or "-", "aciklama": t.aciklama or "-", "tarih": t.tarih.strftime("%d.%m.%Y") if t.tarih else "-"} for t in tahsilatlar],
         "ozet": {"aylik_gelir": aylik_gelir, "aylik_gider": aylik_gider, "aylik_net": aylik_gelir - aylik_gider}
     }
 
@@ -301,5 +291,4 @@ def search_client(query: str, db: Session = Depends(get_db)):
 
 @app.post("/api/uyap-sync")
 def uyap_sync(db: Session = Depends(get_db)):
-    log_action(db, "Sistem", "UYAP", "UYAP entegrasyonu başarılı.")
     return {"mesaj": "Sisteminiz UYAP verilerini başarıyla çekti."}
