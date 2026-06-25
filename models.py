@@ -32,6 +32,7 @@ class Client(Base):
     tc_kimlik = Column(String, unique=True, index=True)
     ad_soyad = Column(String, index=True)
     password_hash = Column(String) # Güvenlik için düz password yerine hash kullanıldı
+    dogum_tarihi = Column(String, nullable=True) # YENİ: Doğum tarihi eklendi
     telefon = Column(String, nullable=True)
     eposta = Column(String, nullable=True)
     adres = Column(Text, nullable=True)
@@ -77,6 +78,7 @@ class CaseStage(Base):
     id = Column(Integer, primary_key=True, index=True)
     aciklama = Column(String)
     tarih = Column(DateTime, default=datetime.utcnow)
+    muvekkil_gorebilir = Column(Boolean, default=True) # YENİ: Gizlilik kontrolü
     case_id = Column(Integer, ForeignKey("case_files.id"))
     case_file = relationship("CaseFile", back_populates="stages")
 
@@ -87,6 +89,7 @@ class Document(Base):
     yuklenme_tarihi = Column(DateTime, default=datetime.utcnow)
     dosya_yolu = Column(String, nullable=True)
     ocr_text = Column(Text, nullable=True) 
+    muvekkil_gorebilir = Column(Boolean, default=True) # YENİ: Gizlilik kontrolü
     case_id = Column(Integer, ForeignKey("case_files.id"))
     case_file = relationship("CaseFile", back_populates="documents")
 
