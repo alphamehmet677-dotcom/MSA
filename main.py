@@ -77,7 +77,6 @@ class HearingCreate(BaseModel): tarih: date; saat: str = "10:00"; mahkeme: str
 class HearingUpdate(BaseModel): sonuc: str
 class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str; eposta: str; dosya_no: str; karsi_taraf: str; tur: str; anlasilan_ucret: float; dogum_tarihi: str = ""
 class CaseClientUpdate(BaseModel): durum: str; karsi_taraf: str; anlasilan_ucret: float; telefon: str; eposta: str
-class CaseClientUpdate(BaseModel): durum: str; karsi_taraf: str; anlasilan_ucret: float; telefon: str; eposta: str
 class InquiryReq(BaseModel): tc_kimlik: str; dosya_no: str
 
 @app.post("/api/inquiry")
@@ -215,24 +214,27 @@ def get_finance(db: Session = Depends(get_db)):
     }
 
 @app.get("/api/cases/{case_id}/details")
-def get_case_details(case_id: int, db: Session = Depends(get_db)):
+def get_case_details(case_id: int, x_user_role: str = Header(default="Avukat"), db: Session = Depends(get_db)):
     c = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
     if not c: raise HTTPException(status_code=404)
     hesap = c.owner.account
+    
     if x_user_role == "Müvekkil":
         asamalar = [{"id": s.id, "tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama, "gor": True} for s in c.stages if s.muvekkil_gorebilir]
         evraklar = [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu, "gor": True} for d in c.documents if d.muvekkil_gorebilir]
     else:
         asamalar = [{"id": s.id, "tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama, "gor": s.muvekkil_gorebilir} for s in c.stages]
         evraklar = [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu, "gor": d.muvekkil_gorebilir} for d in c.documents]
+        
     return {
         "id": c.id, "dosya_no": c.dosya_no, "tur": c.tur.value if c.tur else "Dava", "durum": c.durum, "karsi_taraf": c.karsi_taraf, "is_closed": c.is_closed, "anlasilan_ucret": c.anlasilan_ucret,
         "muvekkil": {"id": c.owner.id, "ad_soyad": c.owner.ad_soyad, "tc": c.owner.tc_kimlik, "telefon": c.owner.telefon, "eposta": c.owner.eposta},
         "finans": {"toplam": hesap.toplam_borc if hesap else 0, "odenen": hesap.odenen if hesap else 0, "kalan": (hesap.toplam_borc - hesap.odenen) if hesap else 0},
-        "asamalar": [{"tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama} for s in c.stages],
-        "evraklar": [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu} for d in c.documents],
+        "asamalar": asamalar,
+        "evraklar": evraklar,
         "durusmalar": [{"id": h.id, "tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat, "mahkeme": h.mahkeme, "sonuc": h.sonuc or ""} for h in sorted(c.hearings, key=lambda x: x.tarih)]
     }
+
 @app.put("/api/stages/{stage_id}/toggle-visibility")
 def toggle_stage_vis(stage_id: int, db: Session = Depends(get_db)):
     s = db.query(models.CaseStage).filter(models.CaseStage.id == stage_id).first()
@@ -256,7 +258,7 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     d = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if d: db.delete(d); db.commit()
     return {"m": "ok"}
-    
+
 @app.get("/api/clients/{client_id}/details")
 def get_client_details(client_id: int, db: Session = Depends(get_db)):
     c = db.query(models.Client).filter(models.Client.id == client_id).first()
