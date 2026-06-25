@@ -301,8 +301,3 @@ def search_client(query: str, db: Session = Depends(get_db)):
     return [{"id": c.id, "dosya_no": c.dosya_no, "muvekkil": c.owner.ad_soyad, "muvekkil_id": c.owner.id, "tur": c.tur.value if c.tur else "Dava", "durum": c.durum, "is_closed": c.is_closed} for c in cases]
 
 @app.post("/api/uyap-sync")
-def uyap_sync(db: Session = Depends(get_db)):
-    return {"mesaj": "Sisteminiz UYAP verilerini başarıyla çekti."}
-    // Giriş başarılı olduğunda (İNDEX.HTML)
-localStorage.setItem("kullanici_rolu", data.role);
-localStorage.setItem("kullanici_id", data.client_id); // Müvekkil ID'si
