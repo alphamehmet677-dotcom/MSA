@@ -230,23 +230,6 @@ def get_finance(db: Session = Depends(get_db)):
     }
 
 @app.get("/api/cases/{case_id}/details")
-@app.get("/api/cases/{case_id}/qr")
-def get_case_qr(case_id: int, db: Session = Depends(get_db)):
-    case = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
-    if not case: raise HTTPException(status_code=404)
-    
-    # QR Kodun yönlendireceği hedef URL (Mobil portal için)
-    qr_data = f"Dosya No: {case.dosya_no}\nMüvekkil: {case.owner.ad_soyad}\nSistem ID: {case.id}"
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    
-    img = qr.make_image(fill_color="black", back_color="white")
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    qr_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-    
-    return {"qr_code": f"data:image/png;base64,{qr_base64}"}
 def get_case_details(case_id: int, x_user_role: str = Header(default="Avukat"), db: Session = Depends(get_db)):
     c = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
     if not c: raise HTTPException(status_code=404)
@@ -267,6 +250,24 @@ def get_case_details(case_id: int, x_user_role: str = Header(default="Avukat"), 
         "evraklar": evraklar,
         "durusmalar": [{"id": h.id, "tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat, "mahkeme": h.mahkeme, "sonuc": h.sonuc or ""} for h in sorted(c.hearings, key=lambda x: x.tarih)]
     }
+
+@app.get("/api/cases/{case_id}/qr")
+def get_case_qr(case_id: int, db: Session = Depends(get_db)):
+    case = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
+    if not case: raise HTTPException(status_code=404)
+    
+    # QR Kodun yönlendireceği hedef URL (Mobil portal için)
+    qr_data = f"Dosya No: {case.dosya_no}\nMüvekkil: {case.owner.ad_soyad}\nSistem ID: {case.id}"
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    
+    return {"qr_code": f"data:image/png;base64,{qr_base64}"}
 
 @app.put("/api/stages/{stage_id}/toggle-visibility")
 def toggle_stage_vis(stage_id: int, db: Session = Depends(get_db)):
