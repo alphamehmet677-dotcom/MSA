@@ -487,29 +487,29 @@
 
         function cikisYap() { localStorage.clear(); location.reload(); }
 
-        function uygulamayaGec() {
-            document.getElementById("login-overlay").style.display = "none";
-            document.getElementById("app-content").style.display = "flex";
-            menuleriYukle();
-            sayfaDegistir('page-dashboard');
-        }
+       function uygulamayaGec() {
+    document.getElementById("login-overlay").style.display = "none";
+    document.getElementById("app-content").style.display = "flex";
+    menuleriYukle();
+    sayfaDegistir('page-dashboard');
 
-        if(localStorage.getItem("msa_token")) { uygulamayaGec(); }
-
-        // ÖNELLEK KIRICI
-        async function authFetch(url, options = {}) {
-            const token = localStorage.getItem("msa_token");
-            const headers = { ...options.headers };
-            if(token) headers['Authorization'] = `Bearer ${token}`;
-            
-            if(!options.method || options.method.toUpperCase() === 'GET') {
-                url += (url.includes('?') ? '&' : '?') + '_t=' + new Date().getTime();
+    // PROFESYONEL ÖZELLİK: Gelişmiş Müvekkil Portalı Kısıtlaması
+    const userRole = localStorage.getItem("msa_role");
+    if(userRole === "Müvekkil") {
+        showToast("Müvekkil Portalı Moduna Geçildi", "info");
+        // Müvekkilin görmemesi gereken menüleri gizle
+        document.querySelectorAll('.menu-item').forEach(item => {
+            const text = item.innerText;
+            if(text.includes("Muhasebe") || text.includes("Kayıtlar") || text.includes("Arşivler") || text.includes("AI Dilekçe")) {
+                item.style.display = "none";
             }
-            
-            const res = await fetch(url, { ...options, headers });
-            if(res.status === 401) { cikisYap(); throw new Error("Oturum süresi doldu."); }
-            return res;
-        }
+        });
+        // Gösterge panelindeki ofis özetlerini gizle
+        document.getElementById("stats-container").style.display = "none";
+        document.getElementById("agenda-panel").style.display = "none";
+        document.getElementById("btn-uyap-sync").style.display = "none"; // UYAP butonunu gizle
+    }
+}
 
         function toggleSidebar() { document.querySelector('.sidebar').classList.toggle('active'); document.querySelector('.sidebar-overlay').classList.toggle('active'); }
         function toggleMenu(btn) { document.querySelectorAll('.menu-item').forEach(i => { if(i !== btn.parentElement) i.classList.remove('active'); }); btn.parentElement.classList.toggle('active'); }
