@@ -75,8 +75,18 @@ class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float; kdv_ora
 class PaymentCreate(BaseModel): miktar: float; odeme_yontemi: str = "Banka"; aciklama: str = ""; makbuz_no: str = ""
 class HearingCreate(BaseModel): tarih: date; saat: str = "10:00"; mahkeme: str
 class HearingUpdate(BaseModel): sonuc: str
-class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str; eposta: str; dosya_no: str; karsi_taraf: str; tur: str; anlasilan_ucret: float
+class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str; eposta: str; dosya_no: str; karsi_taraf: str; tur: str; anlasilan_ucret: float; dogum_tarihi: str = ""
 class CaseClientUpdate(BaseModel): durum: str; karsi_taraf: str; anlasilan_ucret: float; telefon: str; eposta: str
+class CaseClientUpdate(BaseModel): durum: str; karsi_taraf: str; anlasilan_ucret: float; telefon: str; eposta: str
+class InquiryReq(BaseModel): tc_kimlik: str; dosya_no: str
+
+@app.post("/api/inquiry")
+def public_inquiry(req: InquiryReq, db: Session = Depends(get_db)):
+    c = db.query(models.Client).filter(models.Client.tc_kimlik == req.tc_kimlik).first()
+    if not c: raise HTTPException(404, "TC Kimlik numarası sistemde kayıtlı değil.")
+    case = db.query(models.CaseFile).filter(models.CaseFile.dosya_no == req.dosya_no, models.CaseFile.client_id == c.id).first()
+    if not case: raise HTTPException(404, "Bu TC Kimlik numarasına ait böyle bir dosya bulunamadı.")
+    return {"durum": case.durum, "karsi_taraf": case.karsi_taraf, "tur": case.tur.value if case.tur else "", "ad": c.ad_soyad}
 
 @app.post("/api/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
@@ -99,8 +109,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
     if not client:
-        default_pw = get_password_hash("123456")
-        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password_hash=default_pw)
+        default_pw = get_password_hash(data.dogum_tarihi) if data.dogum_tarihi else get_password_hash("123456")
+        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon, eposta=data.eposta, password_hash=default_pw, dogum_tarihi=data.dogum_tarihi)
         db.add(client); db.commit(); db.refresh(client)
     else:
         client.telefon = data.telefon; client.eposta = data.eposta
@@ -209,6 +219,12 @@ def get_case_details(case_id: int, db: Session = Depends(get_db)):
     c = db.query(models.CaseFile).filter(models.CaseFile.id == case_id).first()
     if not c: raise HTTPException(status_code=404)
     hesap = c.owner.account
+    if x_user_role == "Müvekkil":
+        asamalar = [{"id": s.id, "tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama, "gor": True} for s in c.stages if s.muvekkil_gorebilir]
+        evraklar = [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu, "gor": True} for d in c.documents if d.muvekkil_gorebilir]
+    else:
+        asamalar = [{"id": s.id, "tarih": s.tarih.strftime("%d.%m.%Y"), "aciklama": s.aciklama, "gor": s.muvekkil_gorebilir} for s in c.stages]
+        evraklar = [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu, "gor": d.muvekkil_gorebilir} for d in c.documents]
     return {
         "id": c.id, "dosya_no": c.dosya_no, "tur": c.tur.value if c.tur else "Dava", "durum": c.durum, "karsi_taraf": c.karsi_taraf, "is_closed": c.is_closed, "anlasilan_ucret": c.anlasilan_ucret,
         "muvekkil": {"id": c.owner.id, "ad_soyad": c.owner.ad_soyad, "tc": c.owner.tc_kimlik, "telefon": c.owner.telefon, "eposta": c.owner.eposta},
@@ -217,7 +233,30 @@ def get_case_details(case_id: int, db: Session = Depends(get_db)):
         "evraklar": [{"id": d.id, "tarih": d.yuklenme_tarihi.strftime("%d.%m.%Y"), "ad": d.evrak_adi, "yol": d.dosya_yolu} for d in c.documents],
         "durusmalar": [{"id": h.id, "tarih": h.tarih.strftime("%d.%m.%Y"), "saat": h.saat, "mahkeme": h.mahkeme, "sonuc": h.sonuc or ""} for h in sorted(c.hearings, key=lambda x: x.tarih)]
     }
+@app.put("/api/stages/{stage_id}/toggle-visibility")
+def toggle_stage_vis(stage_id: int, db: Session = Depends(get_db)):
+    s = db.query(models.CaseStage).filter(models.CaseStage.id == stage_id).first()
+    if s: s.muvekkil_gorebilir = not s.muvekkil_gorebilir; db.commit()
+    return {"m": "ok"}
 
+@app.delete("/api/stages/{stage_id}")
+def delete_stage(stage_id: int, db: Session = Depends(get_db)):
+    s = db.query(models.CaseStage).filter(models.CaseStage.id == stage_id).first()
+    if s: db.delete(s); db.commit()
+    return {"m": "ok"}
+
+@app.put("/api/documents/{doc_id}/toggle-visibility")
+def toggle_doc_vis(doc_id: int, db: Session = Depends(get_db)):
+    d = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if d: d.muvekkil_gorebilir = not d.muvekkil_gorebilir; db.commit()
+    return {"m": "ok"}
+
+@app.delete("/api/documents/{doc_id}")
+def delete_document(doc_id: int, db: Session = Depends(get_db)):
+    d = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if d: db.delete(d); db.commit()
+    return {"m": "ok"}
+    
 @app.get("/api/clients/{client_id}/details")
 def get_client_details(client_id: int, db: Session = Depends(get_db)):
     c = db.query(models.Client).filter(models.Client.id == client_id).first()
