@@ -757,3 +757,19 @@
     </script>
 </body>
 </html>
+function tabloyuExcelIndir(tableId, dosyaAdi) {
+    let table = document.getElementById(tableId);
+    if (!table) return;
+    let rows = Array.from(table.querySelectorAll("tr"));
+    let csv = rows.map(row => {
+        let cells = Array.from(row.querySelectorAll("th, td"));
+        return cells.map(cell => `"${cell.innerText.replace(/"/g, '""')}"`).join(",");
+    }).join("\n");
+
+    let blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = dosyaAdi + "_" + new Date().toISOString().slice(0,10) + ".csv";
+    link.click();
+    showToast("Excel dosyası başarıyla indirildi.", "success");
+}
