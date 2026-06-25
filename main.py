@@ -303,3 +303,13 @@ def search_client(query: str, db: Session = Depends(get_db)):
 @app.post("/api/uyap-sync")
 def uyap_sync(db: Session = Depends(get_db)):
     return {"mesaj": "Sisteminiz UYAP verilerini başarıyla çekti."}
+    // Giriş başarılı olduğunda (İNDEX.HTML)
+localStorage.setItem("kullanici_rolu", data.role);
+localStorage.setItem("kullanici_id", data.client_id); // Müvekkil ID'si
+
+// Sayfa yüklendiğinde menüleri ayarla:
+if (localStorage.getItem("kullanici_rolu") === "Müvekkil") {
+    document.getElementById("menuMuhasebe").style.display = "none";
+    document.getElementById("menuAjanda").style.display = "none";
+    // Sadece /api/clients/{client_id}/details endpointine istek atıp kendi dosyasını göster
+}
