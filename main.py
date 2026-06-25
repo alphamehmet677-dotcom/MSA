@@ -13,21 +13,35 @@ from pydantic import BaseModel
 from database import SessionLocal, engine
 from datetime import date, timedelta, datetime
 import models
+import mock_data # YENİ: Otomatik onarım için eklendi
 
 SECRET_KEY = "merve_safa_alparslan_erp_secret"
 
-# YENİ: RENDER İÇİN OTOMATİK VERİTABANI KURULUMU (SİSTEM ÇÖKMESİNİ EKLER)
+# ---------------------------------------------------------
+# YENİ: AKILLI VERİTABANI ONARIM SİSTEMİ (SELF-HEALING)
+# ---------------------------------------------------------
 models.Base.metadata.create_all(bind=engine)
 
-# YENİ: YÖNETİCİ HESABI YOKSA OTOMATİK OLUŞTUR (Giriş sorunu yaşanmaması için)
+try:
+    # Veritabanında yeni eklediğimiz "password" sütunu var mı diye test et
+    db_check = SessionLocal()
+    db_check.query(models.Client.password).first()
+    db_check.close()
+except Exception as e:
+    # Eğer hata verirse (sütun yoksa), eski tabloları silip yeni yapıyla mock_data'yı çalıştır
+    print("Sistem Uyarısı: Eski veritabanı şeması tespit edildi. Tablolar onarılıyor...")
+    mock_data.create_mock_data()
+
+# Yönetici hesabının varlığını garantiye al
 db_init = SessionLocal()
 if not db_init.query(models.User).filter(models.User.username == "merve").first():
     db_init.add(models.User(username="merve", password_hash="merve2026", ad_soyad="Av. Merve Safa Alparslan", role="Kurucu"))
     db_init.commit()
 db_init.close()
+# ---------------------------------------------------------
 
 os.makedirs("uploads", exist_ok=True)
-app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="7.0.0")
+app = FastAPI(title="Merve Safa Alparslan Hukuk ERP API", version="7.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -47,9 +61,9 @@ class LoginRequest(BaseModel): username: str; password: str
 class TodoCreate(BaseModel): task: str; detay: str = ""
 class ClientCaseCreate(BaseModel): tc_kimlik: str; ad_soyad: str; telefon: str = ""; dosya_no: str; karsi_taraf: str; tur: str
 class CaseUpdate(BaseModel): durum: str; karsi_taraf: str
-class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float # Gider Modeli
+class ExpenseCreate(BaseModel): kalem: str; kategori: str; tutar: float
 
-# --- GİRİŞ / ÇİFT ROL YETKİLENDİRME (AVUKAT & MÜVEKKİL) ---
+# --- GİRİŞ / ÇİFT ROL YETKİLENDİRME ---
 @app.post("/api/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == req.username).first()
@@ -87,7 +101,6 @@ def update_case(case_id: int, req: CaseUpdate, db: Session = Depends(get_db)):
     if case: case.durum = req.durum; case.karsi_taraf = req.karsi_taraf; db.commit()
     return {"mesaj": "Güncellendi."}
 
-# YENİ: OFİS GİDERİ API'LERİ EKLENDİ
 @app.post("/api/expenses")
 def create_expense(req: ExpenseCreate, db: Session = Depends(get_db)):
     db.add(models.OfficeExpense(kalem=req.kalem, kategori=req.kategori, tutar=req.tutar))
