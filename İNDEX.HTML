@@ -734,21 +734,3 @@
     </script>
 </body>
 </html>
-<div id="aktifGorevlerListesi"></div>
-<div id="bitenGorevlerListesi"></div>
-function ajandayiGetir() {
-    fetch('/api/todos')
-    .then(res => res.json())
-    .then(data => {
-        let html = '';
-        data.forEach(gorev => {
-            html += `<li>${gorev.task} - ${gorev.detay} <button onclick="gorevTamamla(${gorev.id})">Yapıldı İşaretle</button></li>`;
-        });
-        document.getElementById('aktifGorevlerListesi').innerHTML = html;
-    });
-}
-
-function gorevTamamla(id) {
-    fetch(`/api/todos/${id}/toggle`, { method: 'PUT' })
-    .then(() => ajandayiGetir()); // Tamamlanınca listeyi yenile
-}
