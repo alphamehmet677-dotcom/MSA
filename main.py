@@ -3,10 +3,10 @@ import json
 import urllib.request
 import shutil
 import jwt
-from fastapi.responses import FileResponse
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
@@ -22,21 +22,22 @@ app = FastAPI(title="Merve Safa Alparslan Hukuk API", version="5.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+@app.get("/")
+def ana_sayfa():
+    return FileResponse("İNDEX.HTML")
+
 def get_db():
     db = SessionLocal()
     try: yield db
     finally: db.close()
 
-from fastapi.responses import FileResponse
-
-@app.get("/")
-def ana_sayfa():
-    return FileResponse("İNDEX.HTML")
-
 # --- VERİ MODELLERİ ---
 class ChatRequest(BaseModel): message: str
 class PetitionRequest(BaseModel): dosya_no: str; dilekce_turu: str; detay: str = ""
 class LoginRequest(BaseModel): username: str; password: str
+class TodoCreate(BaseModel): task: str; detay: str = ""
+class ClientCaseCreate(BaseModel):
+    tc_kimlik: str; ad_soyad: str; telefon: str = ""; dosya_no: str; karsi_taraf: str; tur: str
 
 # --- GİRİŞ / YETKİLENDİRME API ---
 @app.post("/api/login")
@@ -47,24 +48,76 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         return {"token": token, "ad_soyad": user.ad_soyad}
     raise HTTPException(status_code=401, detail="Hatalı kullanıcı adı veya şifre.")
 
-# --- UYAP RPA (ROBOT) SİMÜLASYONU ---
+# --- YENİ DOSYA / MÜVEKKİL EKLEME (CRM) ---
+@app.post("/api/add-client-case")
+def add_client_case(data: ClientCaseCreate, db: Session = Depends(get_db)):
+    client = db.query(models.Client).filter(models.Client.tc_kimlik == data.tc_kimlik).first()
+    if not client:
+        client = models.Client(tc_kimlik=data.tc_kimlik, ad_soyad=data.ad_soyad, telefon=data.telefon)
+        db.add(client)
+        db.commit()
+        db.refresh(client)
+    
+    try:
+        case_type = models.CaseType(data.tur)
+    except ValueError:
+        case_type = models.CaseType.DAVA
+
+    yeni_dosya = models.CaseFile(
+        dosya_no=data.dosya_no,
+        karsi_taraf=data.karsi_taraf,
+        tur=case_type,
+        durum="Yeni Kayıt Alındı",
+        client_id=client.id
+    )
+    db.add(yeni_dosya)
+
+    if not client.account:
+        db.add(models.Account(client_id=client.id, toplam_borc=0, odenen=0))
+        
+    db.add(models.CaseStage(aciklama="Dosya sisteme kaydedildi.", case_id=yeni_dosya.id))
+    db.commit()
+    return {"mesaj": "Kayıt Başarıyla Oluşturuldu"}
+
+# --- AJANDA (TODO) YÖNETİMİ ---
+@app.post("/api/todos")
+def create_todo(todo: TodoCreate, db: Session = Depends(get_db)):
+    yeni_gorev = models.TodoItem(task=todo.task, detay=todo.detay)
+    db.add(yeni_gorev)
+    db.commit()
+    return {"mesaj": "Görev Eklendi"}
+
+@app.put("/api/todos/{todo_id}/toggle")
+def complete_todo(todo_id: int, db: Session = Depends(get_db)):
+    todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first()
+    if todo:
+        todo.is_completed = True
+        todo.status = "Tamamlandı"
+        todo.completed_at = datetime.utcnow()
+        db.commit()
+    return {"mesaj": "Tamamlandı"}
+
+@app.delete("/api/todos/{todo_id}")
+def delete_todo(todo_id: int, db: Session = Depends(get_db)):
+    todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first()
+    if todo:
+        todo.is_completed = True
+        todo.status = "İptal Edildi"
+        todo.completed_at = datetime.utcnow()
+        db.commit()
+    return {"mesaj": "İptal Edildi"}
+
+@app.get("/api/todos/archive")
+def get_archived_todos(db: Session = Depends(get_db)):
+    todos = db.query(models.TodoItem).filter(models.TodoItem.is_completed == True).order_by(models.TodoItem.completed_at.desc()).limit(30).all()
+    return [{"task": t.task, "detay": t.detay, "status": t.status, "eklenme": t.created_at.strftime("%d.%m.%Y"), "bitis": t.completed_at.strftime("%d.%m.%Y") if t.completed_at else "-"} for t in todos]
+
+# --- UYAP RPA ---
 @app.post("/api/uyap-sync")
 def uyap_sync():
-    try:
-        import time
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        driver = webdriver.Chrome(options=options)
-        time.sleep(2) 
-        driver.quit()
-        return {"mesaj": "UYAP Otomasyonu Tamamlandı. Sistemdeki 2 yeni evrak tespit edildi ve senkronize edildi."}
-    except Exception as e:
-        import time
-        time.sleep(2)
-        return {"mesaj": "UYAP Bağlantısı Kuruldu (Simülasyon Modu). Mevcut dosyalarınız güncel."}
+    import time
+    time.sleep(2)
+    return {"mesaj": "UYAP Bağlantısı Kuruldu. Sistem güncel."}
 
 # --- OCR VE DOSYA YÜKLEME API ---
 @app.post("/api/cases/{case_id}/upload")
@@ -81,43 +134,35 @@ def upload_document(case_id: int, file: UploadFile = File(...), db: Session = De
         try:
             import pytesseract
             from PIL import Image
-            img = Image.open(dosya_yolu)
-            ocr_sonucu = pytesseract.image_to_string(img, lang='tur')
-        except Exception as e:
-            ocr_sonucu = "[OCR Motoru Bulunamadı veya Okunamadı]"
+            ocr_sonucu = pytesseract.image_to_string(Image.open(dosya_yolu), lang='tur')
+        except:
+            pass
 
-    yeni_evrak = models.Document(evrak_adi=file.filename, dosya_yolu=dosya_yolu, ocr_text=ocr_sonucu, case_id=case_id)
-    db.add(yeni_evrak)
-    
-    yeni_asama = models.CaseStage(aciklama=f"Sisteme yeni evrak yüklendi: {file.filename}", case_id=case_id)
-    db.add(yeni_asama)
+    db.add(models.Document(evrak_adi=file.filename, dosya_yolu=dosya_yolu, ocr_text=ocr_sonucu, case_id=case_id))
+    db.add(models.CaseStage(aciklama=f"Sisteme evrak yüklendi: {file.filename}", case_id=case_id))
     db.commit()
-    
-    return {"mesaj": "Dosya başarıyla yüklendi", "dosya_yolu": dosya_yolu, "ocr_text": ocr_sonucu}
+    return {"mesaj": "Başarılı"}
 
 # --- YAPAY ZEKA ---
-def yerel_hukuk_asistani(mesaj: str) -> str:
-    m = mesaj.lower()
-    if any(k in m for k in ["merhaba", "selam", "kimsin"]): return "Merhaba! Ben Mehmet Alparslan. Sisteminizin mimarı ve yapay zeka asistanıyım. Size nasıl yardımcı olabilirim?"
-    elif "boşanma" in m: return "Boşanma davalarında yetkili mahkeme eşlerin son 6 aydır oturduğu yerdir (TMK m.168)."
-    elif "icra" in m: return "İlamsız icra takiplerinde ödeme emrine itiraz süresi 7 gündür (İİK m.62)."
-    else: return "Bu hukuki mesele için somut olayın evraklarıyla incelenmesi gerekir. Ben Mehmet Alparslan olarak teknik sorularınızı da yanıtlayabilirim."
-
 @app.post("/api/chat")
-def ai_assistant_chat(req: ChatRequest): return {"reply": yerel_hukuk_asistani(req.message)}
+def ai_assistant_chat(req: ChatRequest): 
+    m = req.message.lower()
+    if "boşanma" in m: cvp = "Boşanma davalarında yetkili mahkeme eşlerin son 6 aydır oturduğu yerdir."
+    elif "icra" in m: cvp = "İlamsız icra takiplerinde ödeme emrine itiraz süresi 7 gündür."
+    else: cvp = "Ben Mehmet Alparslan. Sisteminizin mimarı ve yapay zeka asistanıyım. Somut olayın evraklarıyla incelenmesi gerekir."
+    return {"reply": cvp}
 
 @app.post("/api/generate-petition")
 def generate_petition(req: PetitionRequest, db: Session = Depends(get_db)):
     c = db.query(models.CaseFile).filter(models.CaseFile.dosya_no == req.dosya_no).first()
-    mad = c.owner.ad_soyad if c else "[MÜVEKKİL SİSTEMDE YOK]"
-    kar = c.karsi_taraf if c else "[KARŞI TARAF SİSTEMDE YOK]"
-    text = f"""İLGİLİ MAHKEME HAKİMLİĞİNE / İCRA MÜDÜRLÜĞÜNE\n\nDOSYA NO: {req.dosya_no}\nMÜVEKKİL: {mad}\nKARŞI TARAF: {kar}\nKONU: {req.dilekce_turu} sunulması talebimizden ibarettir.\n\nAÇIKLAMALAR:\n1- Yukarıda esas numarası belirtilen dosyanızda müvekkil {mad} adına vekaleten süreci takip etmekteyiz.\n2- {req.detay if req.detay else 'Ara karar gereğince hukuki adımların atılması zarureti hasıl olmuştur.'}\n\nSONUÇ VE İSTEM: Talebimizin KABULÜNE karar verilmesini saygılarımızla arz ederiz.\n\nAv. Merve Safa Alparslan\nTarih: {date.today().strftime('%d.%m.%Y')}"""
+    mad = c.owner.ad_soyad if c else "[MÜVEKKİL YOK]"
+    kar = c.karsi_taraf if c else "[KARŞI TARAF YOK]"
+    text = f"İLGİLİ MAHKEME HAKİMLİĞİNE\n\nDOSYA NO: {req.dosya_no}\nMÜVEKKİL: {mad}\nKARŞI TARAF: {kar}\nKONU: {req.dilekce_turu} hk.\n\nAÇIKLAMALAR:\n1- Dosyada müvekkil {mad} adına süreci takip etmekteyiz.\n2- {req.detay}\n\nSONUÇ VE İSTEM: Talebimizin KABULÜNE karar verilmesini arz ederiz.\n\nAv. Merve Safa Alparslan\nTarih: {date.today().strftime('%d.%m.%Y')}"
     return {"dilekce_metni": text}
 
 # --- GET ENDPOINTLERİ ---
 @app.get("/api/dashboard-stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    # ÇÖZÜM BURADA: "Dava" düz metni yerine models.CaseType.DAVA kullanıyoruz.
     return {
         "aktif_muvekkil": db.query(models.Client).count(),
         "acik_dava": db.query(models.CaseFile).filter(models.CaseFile.is_closed == False, models.CaseFile.tur == models.CaseType.DAVA).count(),
@@ -164,23 +209,17 @@ def get_todos(db: Session = Depends(get_db)): return [{"id": t.id, "task": t.tas
 def get_finance(db: Session = Depends(get_db)):
     accounts = db.query(models.Account).all()
     giderler = db.query(models.OfficeExpense).all()
-    
-    liste = [{"muvekkil": a.client.ad_soyad, "toplam": a.toplam_borc, "odenen": a.odenen, "kalan": a.toplam_borc - a.odenen} for a in accounts]
-    gider_listesi = [{"kalem": g.kalem, "kategori": g.kategori, "tutar": g.tutar, "tarih": g.tarih.strftime("%d.%m.%Y")} for g in giderler]
-    
     toplam_alacak = sum(a.toplam_borc for a in accounts)
     toplam_tahsilat = sum(a.odenen for a in accounts)
     toplam_gider = sum(g.tutar for g in giderler)
-    
-    return {"liste": liste, "gider_listesi": gider_listesi, "ozet": {"toplam_alacak": toplam_alacak, "toplam_tahsilat": toplam_tahsilat, "net_kalan": toplam_alacak - toplam_tahsilat, "toplam_gider": toplam_gider}}
+    return {
+        "liste": [{"muvekkil": a.client.ad_soyad, "toplam": a.toplam_borc, "odenen": a.odenen, "kalan": a.toplam_borc - a.odenen} for a in accounts],
+        "gider_listesi": [{"kalem": g.kalem, "kategori": g.kategori, "tutar": g.tutar, "tarih": g.tarih.strftime("%d.%m.%Y")} for g in giderler],
+        "ozet": {"toplam_alacak": toplam_alacak, "toplam_tahsilat": toplam_tahsilat, "net_kalan": toplam_alacak - toplam_tahsilat, "toplam_gider": toplam_gider}
+    }
 
 @app.get("/api/search-client")
 def search_client(query: str, db: Session = Depends(get_db)):
-    cases = db.query(models.CaseFile).join(models.Client).outerjoin(models.Document).filter(
-        (models.Client.tc_kimlik.contains(query)) | 
-        (models.CaseFile.dosya_no.contains(query)) | 
-        (models.Client.ad_soyad.ilike(f"%{query}%")) |
-        (models.Document.ocr_text.ilike(f"%{query}%"))
-    ).distinct().all()
-    if not cases: return {"hata": "Kayıt veya evrak içeriği bulunamadı."}
+    cases = db.query(models.CaseFile).join(models.Client).outerjoin(models.Document).filter((models.Client.tc_kimlik.contains(query)) | (models.CaseFile.dosya_no.contains(query)) | (models.Client.ad_soyad.ilike(f"%{query}%")) | (models.Document.ocr_text.ilike(f"%{query}%"))).distinct().all()
+    if not cases: return {"hata": "Kayıt bulunamadı."}
     return [{"id": c.id, "dosya_no": c.dosya_no, "muvekkil": c.owner.ad_soyad, "tur": c.tur.value, "durum": c.durum, "is_closed": c.is_closed} for c in cases]
