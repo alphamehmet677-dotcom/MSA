@@ -31,7 +31,7 @@ class Client(Base):
     id = Column(Integer, primary_key=True, index=True)
     tc_kimlik = Column(String, unique=True, index=True)
     ad_soyad = Column(String, index=True)
-    password = Column(String, default="123456") # Müvekkil portalı giriş şifresi
+    password = Column(String, default="123456") 
     telefon = Column(String, nullable=True)
     eposta = Column(String, nullable=True)
     adres = Column(Text, nullable=True)
@@ -41,6 +41,7 @@ class Client(Base):
 
     cases = relationship("CaseFile", back_populates="owner", cascade="all, delete-orphan")
     account = relationship("Account", back_populates="client", uselist=False, cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="client", cascade="all, delete-orphan")
 
 class CaseFile(Base):
     __tablename__ = "case_files"
@@ -49,6 +50,7 @@ class CaseFile(Base):
     karsi_taraf = Column(String)
     tur = Column(Enum(CaseType))
     durum = Column(String) 
+    anlasilan_ucret = Column(Float, default=0.0) # YENİ: Dosya bazlı ücret
     is_closed = Column(Boolean, default=False)
     kapanis_tarihi = Column(DateTime, nullable=True)
     acilis_tarihi = Column(DateTime, default=datetime.utcnow)
@@ -58,6 +60,15 @@ class CaseFile(Base):
     hearings = relationship("Hearing", back_populates="case_file", cascade="all, delete-orphan")
     stages = relationship("CaseStage", back_populates="case_file", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="case_file", cascade="all, delete-orphan")
+
+# YENİ: AYLIK BAZLI TAHSİLAT TAKİBİ
+class Payment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True, index=True)
+    miktar = Column(Float)
+    tarih = Column(DateTime, default=datetime.utcnow)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    client = relationship("Client", back_populates="payments")
 
 class CaseStage(Base):
     __tablename__ = "case_stages"
