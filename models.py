@@ -31,7 +31,7 @@ class Client(Base):
     id = Column(Integer, primary_key=True, index=True)
     tc_kimlik = Column(String, unique=True, index=True)
     ad_soyad = Column(String, index=True)
-    password = Column(String, default="123456") 
+    password_hash = Column(String) # Güvenlik için düz password yerine hash kullanıldı
     telefon = Column(String, nullable=True)
     eposta = Column(String, nullable=True)
     adres = Column(Text, nullable=True)
@@ -66,9 +66,9 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     miktar = Column(Float)
     tarih = Column(DateTime, default=datetime.utcnow)
-    odeme_yontemi = Column(String, default="Banka") # DÜZELTİLDİ
-    makbuz_no = Column(String, nullable=True) # DÜZELTİLDİ
-    aciklama = Column(String, nullable=True) # DÜZELTİLDİ
+    odeme_yontemi = Column(String, default="Banka") 
+    makbuz_no = Column(String, nullable=True) 
+    aciklama = Column(String, nullable=True) 
     client_id = Column(Integer, ForeignKey("clients.id"))
     client = relationship("Client", back_populates="payments")
 
@@ -107,7 +107,7 @@ class Hearing(Base):
     tarih = Column(Date)
     saat = Column(String, nullable=True)
     mahkeme = Column(String) 
-    sonuc = Column(Text, nullable=True) # DÜZELTİLDİ: Duruşma sonucu
+    sonuc = Column(Text, nullable=True) 
     case_id = Column(Integer, ForeignKey("case_files.id"))
     case_file = relationship("CaseFile", back_populates="hearings")
 
@@ -125,7 +125,16 @@ class OfficeExpense(Base):
     kalem = Column(String)
     kategori = Column(String) 
     tutar = Column(Float)
-    kdv_orani = Column(Integer, default=20) # DÜZELTİLDİ
-    odeme_yontemi = Column(String, default="Banka") # DÜZELTİLDİ
-    fatura_no = Column(String, nullable=True) # DÜZELTİLDİ
+    kdv_orani = Column(Integer, default=20) 
+    odeme_yontemi = Column(String, default="Banka") 
+    fatura_no = Column(String, nullable=True) 
     tarih = Column(Date, default=date.today)
+
+# YENİ ÖZELLİK: İşlem Geçmişi (Audit Log)
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    kullanici = Column(String, index=True)
+    islem_tipi = Column(String)
+    detay = Column(Text)
+    tarih = Column(DateTime, default=datetime.utcnow)
