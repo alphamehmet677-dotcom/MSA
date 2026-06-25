@@ -15,9 +15,25 @@ from datetime import date, timedelta, datetime
 import models
 import mock_data
 import bcrypt 
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import qrcode
+import io
+import base64
 
-# Güvenlik Ayarları
-SECRET_KEY = "merve_safa_alparslan_erp_secret"
+# Güvenlik Ayarları (.env'den çekilir, yoksa varsayılanı kullanır)
+SECRET_KEY = os.getenv("SECRET_KEY", "merve_safa_alparslan_erp_secret")
+
+security = HTTPBearer()
+
+# Yetkilendirme Kontrol Ara Katmanı (Middleware / Dependency)
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), x_user_role: str = Header(default="Avukat")):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        return {"username": payload.get("sub"), "role": payload.get("role")}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Oturum süresi doldu.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Geçersiz kimlik bilgisi.")
 
 def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode('utf-8')
